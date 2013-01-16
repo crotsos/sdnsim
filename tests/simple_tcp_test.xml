@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<topology module="Simple_tcp_test" backend="ns3-direct">
+  <node name="host1" main="host_inner"> 
+    <param>1</param>
+  </node>
+  <node name="host2" main="host_inner"> 
+    <param>2</param>
+  </node>
+  <link src="host1" dst="host2" delay="10" rate="100" queue_size="100" pcap="false"/>
+</topology>
