@@ -13,5 +13,5 @@ Executable sdnsim
   MainIs:         sdnsim.ml
   Custom:         true
   CompiledObject: native
-  Install:        false
+  Install:        true
   BuildDepends:   lwt, lwt.syntax, xml-light, threads

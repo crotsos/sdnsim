@@ -1,7 +1,7 @@
 .PHONY: all clean distclean setup build doc install test 
 all: build
 
-NAME=mir_build
+NAME=sdnsim
 J=4
 
 clean: setup.data
@@ -23,6 +23,8 @@ doc: setup.data setup.bin
 install: 
 	ocamlfind remove $(NAME)
 	./setup.bin -install $(OFLAGS)
+	install -d -c /usr/local/share/sdnsim/
+	install -c myocamlbuild.ml /usr/local/share/sdnsim/myocamlbuild.ml
 
 test: build
 	./setup.bin -test

@@ -1,51 +1,77 @@
 open Printf
 open Lwt
+open Topo
 
-let generate_simulation module_name nodes links =
-  let out = open_out (sprintf "topo_%s.ml" module_name) in
-  let _ = output_string out "let run () =\n" in  
-  let _ = List.iter (
-    fun (host, main, params) ->
-      let str_param = 
-        List.fold_right (
-        fun (n, v) r -> 
-          match n with
-            | None -> sprintf "%s %s" r v
-            | Some(n) -> sprintf "%s ~%s:%s" r n v
-        ) params "" in 
-      let str_node = 
-        sprintf "\tlet _ = OS.Topology.add_node \"%s\" (%s.%s %s) in\n" 
-          host module_name main str_param in
-        output_string out str_node
-  ) (Hashtbl.fold (fun host (main, params) r-> r @  [(host, main, params)]) nodes []) in
-  let _ = 
-    List.iter
-      ( fun (node_src, node_dst, delay, rate, pcap) -> 
-          let str_node = 
-            sprintf "\tlet _ = OS.Topology.add_link ~prop_delay:%d ~rate:%d ~pcap:%s \"%s\" \"%s\" in"
-              delay rate (string_of_bool pcap) node_src node_dst in
-            output_string out str_node
-      ) links in
-  let _ = output_string out "\t\t()\n" in 
-  let _ = close_out out in 
-  let out = open_out (sprintf "topo_%s.mir" module_name) in
+let build_tags_files sc = 
+  let out = open_out "_tags" in
+  let _ = output_string out "\".git\": -traverse\n\".git\": not_hygienic\n" in 
+  let _ = output_string out "<*.ml{,i}>: syntax_camlp4o\n" in 
   let _ = output_string out 
-            (sprintf "Topo_%s.run \n"
-            module_name) in  
+    (sprintf "\"topo_%s.nobj.o\":pkg_mirage\n" (get_scenario_name sc)) in
+  let _ = output_string out "<*.ml{,i}>: pkg_mirage\n" in 
+  let _ = output_string out 
+    (sprintf "\"topo_%s.nobj.o\":pkg_mirage-net\n" (get_scenario_name sc)) in
+  let _ = output_string out "<*.ml{,i}>: pkg_mirage-net\n" in 
+  let _ = 
+    iter_scenario_module sc (
+      fun build_module -> 
+        let _ = output_string out 
+          (sprintf "\"topo_%s.nobj.o\":pkg_%s\n" (get_scenario_name sc) 
+            build_module) in
+          output_string out (sprintf "<*.ml{,i}>: pkg_%s\n" build_module)
+     ) in 
+  let _ = output_string out 
+    (sprintf "\"topo_%s.nobj.o\":custom\n" (get_scenario_name sc)) in
     close_out out 
 
-let build_simulation module_name = 
+let build_ocamlbuild_files sc = 
+  let _ = Unix.system "cp /usr/local/share/sdnsim/myocamlbuild.ml ." in 
+  let _ = build_tags_files sc in 
+    ()
+
+let generate_scenario sc =
+  let module_name = get_scenario_name sc in 
+  let out = open_out (sprintf "topo_%s.ml" module_name) in
+  let _ = output_string out "let run () =\n" in 
+  let _ = output_string out 
+    (sprintf "\tlet _ = OS.Time.set_duration %d in\n" (get_scenario_duration sc)) in  
+  let _ = iter_scenario_nodes sc (
+    fun host main params ->
+      let _ = output_string out 
+        (sprintf "\tlet _ = OS.Topology.add_node \"%s\" (%s.%s "
+        host module_name main) in 
+      let _ =
+        List.iter (
+        fun (n, v) -> 
+          output_string out 
+          (match n with
+            | None -> sprintf "%s " v
+            | Some(n) -> sprintf "~%s:%s " n v)
+        ) params in 
+      output_string out ") in\n"
+  ) in
+  let _ = 
+    iter_scenario_links sc
+      ( fun src dst delay rate pcap -> 
+        output_string out
+            (sprintf "\tlet _ = OS.Topology.add_link ~prop_delay:%d ~rate:%d ~pcap:%s \"%s\" \"%s\" in"
+              delay rate (string_of_bool pcap) src dst)
+      ) in
+  let _ = output_string out "\t\t()\n" in 
+  let _ = output_string out "let _ = OS.Topology.load run \n" in 
+  let _ = close_out out in 
+  let _ = build_ocamlbuild_files sc in 
+  (* ()
+
+let build_simulation module_name = *)
   let _ = Unix.system "ocamlbuild -clean" in 
-  let _ = Unix.system (sprintf "mir-build ns3-direct/topo_%s.bin" module_name) in 
+  let _ = Unix.system (sprintf "ocamlbuild topo_%s.nobj.o" module_name) in 
+  let _ = Unix.system (sprintf "mir-build -b ns3-native -o %s.native _build/topo_%s.nobj.o" 
+                        module_name module_name) in 
+  let _ = Unix.system (sprintf "rm topo_%s.ml" module_name) in 
     ()
 
-let run_simulation module_name = 
-  let _ = Unix.system (sprintf "./_build/ns3-direct/topo_%s.bin" module_name) in 
+let run_scenario sc = 
+  let _ = Unix.system (sprintf "mpirun -n %d ./%s.native" 
+                        (get_scenario_node_count sc) (get_scenario_name sc)) in 
     ()
-
-let run_code module_name nodes links = 
-  let _ = generate_simulation module_name nodes links in
-  let _ = build_simulation module_name in 
-  let _ = run_simulation module_name in 
-    ()
- 
