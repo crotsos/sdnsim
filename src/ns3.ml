@@ -54,7 +54,7 @@ let generate_scenario sc =
     iter_scenario_links sc
       ( fun src dst delay rate pcap -> 
         output_string out
-            (sprintf "\tlet _ = OS.Topology.add_link ~prop_delay:%d ~rate:%d ~pcap:%s \"%s\" \"%s\" in"
+            (sprintf "\tlet _ = OS.Topology.add_link ~prop_delay:%d ~rate:%d ~pcap:%s \"%s\" \"%s\" in\n"
               delay rate (string_of_bool pcap) src dst)
       ) in
   let _ = output_string out "\t\t()\n" in 
@@ -64,6 +64,7 @@ let generate_scenario sc =
   (* ()
 
 let build_simulation module_name = *)
+  let _ = Unix.system (sprintf "rm %s.native" module_name) in 
   let _ = Unix.system "ocamlbuild -clean" in 
   let _ = Unix.system (sprintf "ocamlbuild topo_%s.nobj.o" module_name) in 
   let _ = Unix.system (sprintf "mir-build -b ns3-native -o %s.native _build/topo_%s.nobj.o" 
