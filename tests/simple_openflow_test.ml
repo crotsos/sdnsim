@@ -33,15 +33,14 @@ let pp = Printf.printf
  *********************************************************)
 
 let rec echo dst chan = 
+  let _ = printf "[host1] server connected....\n%!" in 
   try_lwt
     lwt _ =
       while_lwt true do
         lwt buf = Channel.read_some chan in
-(*
-         return (Printf.printf "%f: read %d\n%!" 
+(*         let _ = Printf.printf "%f: read %d\n%!" 
          (Clock.time ())
-         (Cstruct.len buf)) 
- *)
+         (Cstruct.len buf) in *)
           return () 
       done
     in
@@ -49,11 +48,14 @@ let rec echo dst chan =
   with Nettypes.Closed -> return (pp "closed!\n")
 
 let rec echo_client chan = 
+  let _ = printf "[host2] client connected....\n%!" in 
   try_lwt
     let data = String.create 1460 in 
     let rec send_data () = 
         let _ = Channel.write_string chan data 0 (String.length data) in
-(*         Printf.printf "%f: Writing new buffer....\n%!" (Clock.time ());  *)
+(*        let _ = Printf.printf "%f: Writing new buffer....\n%!" (Clock.time
+ *        ())
+        in *)
         lwt _ = Channel.flush chan in
           send_data ()
     in
@@ -90,20 +92,24 @@ let ip node_id =
       
 (* Code to run on the end node *)
 let host_inner host_id () =
+  lwt _ = OS.Time.sleep 2.0 in 
   let config_host host_id =
     try_lwt 
       Manager.create (fun mgr interface id ->
-        lwt _ = Time.sleep 1. in 
         match host_id with
         | 1 ->
           lwt _ = Manager.configure interface (`IPv4 (ip host_id)) in
+          let _ = printf "[host%d] server setting up ip 10.0.1.%d\n%!" 
+                    host_id host_id  in  
 (*             Datagram.UDPv4.recv mgr (None, port) echo_udp *)
           Net.Channel.listen mgr (`TCPv4 ((None, port), echo ))
         | 2 -> 
           let dst_ip = Nettypes.ipv4_addr_of_tuple (10l,0l,1l,1l) in  
+          let _ = printf "[host%d] client setting up ip 10.0.1.%d\n%!" 
+                    host_id host_id  in  
           lwt _ = Manager.configure interface (`IPv4 (ip host_id)) in
-          lwt _ = Time.sleep 1.0 in
-          Printf.printf "%f: trying to connect client \n%!" (Clock.time ());
+          let _ = Printf.printf "[host%d] %f: trying to connect client \n%!"
+                    host_id (Clock.time ()) in 
 (*             echo_client_udp mgr (dst_ip,port) *)
           Net.Channel.connect mgr (`TCPv4 (None, (dst_ip, port), echo_client ))
         | _ -> return (printf "Invalid node_id %d\n%!" host_id)
@@ -153,6 +159,7 @@ let packet_in_cb controller dpid evt =
       | OE.Packet_in (inp, buf, dat, dp) -> (inp, buf, dat, dp)
       | _ -> invalid_arg "bogus datapath_join event match!"
   in
+
   (* Parse Ethernet header *)
   let m = OP.Match.raw_packet_to_match in_port data in 
 
@@ -209,7 +216,7 @@ let controller_inner () =
         Nettypes.(
           (ipv4_addr_of_tuple (10l,0l,0l,2l),
           ipv4_addr_of_tuple (255l,255l,255l,0l), [])) in  
-      lwt _ = Manager.configure interface (`IPv4 ip) in
+     lwt _ = Manager.configure interface (`IPv4 ip) in
       let dst = ((Nettypes.ipv4_addr_of_tuple (10l,0l,0l,1l)), 6633) in 
         OC.connect mgr dst init 
       )
@@ -232,6 +239,7 @@ let switch_inner () =
   try_lwt 
     Manager.create 
     (fun mgr interface id ->
+      let _ = pp "[xwitch] adding intf %s\n%!" id in 
        match (id) with 
          | "0" ->
              let ip = 
@@ -239,11 +247,9 @@ let switch_inner () =
                  (ipv4_addr_of_tuple (10l,0l,0l,1l),
                   ipv4_addr_of_tuple (255l,255l,255l,0l), [])) in  
                lwt _ = Manager.configure interface (`IPv4 ip) in
-               lwt _ = (Openflow.Ofswitch.listen sw mgr (None, 6633) <&> 
-                       (print_time ())) in 
+               lwt _ = Openflow.Ofswitch.listen sw mgr (None, 6633) in 
                 return ()
-      | _ -> 
-          Openflow.Ofswitch.add_port mgr sw id
+        | _ ->  Openflow.Ofswitch.add_port mgr sw id
     )
   with e ->
     Printf.eprintf "Error: %s" (Printexc.to_string e); 

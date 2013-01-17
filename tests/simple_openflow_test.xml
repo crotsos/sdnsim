@@ -17,7 +17,7 @@
   </node>
   <node name="controller" main="controller_inner"/> 
   <node name="switch" main="switch_inner"/> 
-  <link src="switch" dst="controller" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="node1" dst="switch" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="node2" dst="switch" delay="10" rate="100" queue_size="100" pcap="false"/>
+  <link src="node2" dst="switch" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="node1" dst="switch" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="switch" dst="controller" delay="10" rate="100" queue_size="100" pcap="true"/>
 </topology>
