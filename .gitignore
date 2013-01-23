@@ -10,3 +10,4 @@
 .*.sw?
 *.native
 *.bin
+*.pcap

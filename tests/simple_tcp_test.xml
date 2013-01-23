@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<topology module="Simple_tcp_test" backend="ns3-direct">
+<topology module="Simple_tcp_test" backend="ns3-direct" duration="30">
   <modules>
     <library>lwt</library>
     <library>lwt.syntax</library>
@@ -7,6 +7,7 @@
     <library>cstruct.syntax</library>
     <library>mirage</library>
     <library>mirage-net</library>
+    <library>pttcp</library>
   </modules>
   <node name="host1" main="host_inner"> 
     <param>1</param>

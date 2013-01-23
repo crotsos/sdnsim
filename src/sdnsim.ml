@@ -85,12 +85,12 @@ let parse_xm_file file =
 let generate_scenario sc = 
   match (get_scenario_backend sc) with
     | NS3 -> Ns3.generate_scenario sc
-(*    | XEN -> Xen.build_scenario sc*)
+    | XEN -> Xen.generate_scenario sc
 
 let run_scenario sc = 
   match (get_scenario_backend sc) with
     | NS3 -> Ns3.run_scenario sc
-(*    | XEN -> Xen.run_scenario sc*)
+    | XEN -> Xen.run_scenario sc
 
 let _ =
   try
