@@ -57,9 +57,16 @@ let generate_scenario sc =
             (sprintf "\tlet _ = OS.Topology.add_link ~prop_delay:%d ~rate:%d ~pcap:%s \"%s\" \"%s\" in\n"
               delay rate (string_of_bool pcap) src dst)
       ) in
-  let _ = output_string out "\t\t()\n" in 
-  let _ = output_string out "let _ = OS.Topology.load run \n" in 
-  let _ = close_out out in 
+  let _ = output_string out "\t\t()\n\n" in 
+  let _ = 
+    match (get_scenario_log_server sc) with
+    | None -> output_string out "let _ = OS.Topology.load run \n" 
+    | Some (server, port) -> 
+        output_string out 
+          (sprintf "let _ = OS.Topology.load ~debug:(Some(\"%s\",%d)) run\n"
+          server port)
+  in
+   let _ = close_out out in 
   let _ = build_ocamlbuild_files sc in 
   (* ()
 
@@ -76,3 +83,4 @@ let run_scenario sc =
   let _ = Unix.system (sprintf "mpirun -n %d ./%s.native" 
                         (get_scenario_node_count sc) (get_scenario_name sc)) in 
     ()
+

@@ -15,6 +15,7 @@ type scenario = {
   mutable name : string;
   mutable duration : int;
   mutable backend :backend;
+  mutable log_server : (string * int) option;
   mutable nodes : (string, string * params) Hashtbl.t;
   mutable links : (string * string * int * int * bool) list;
   mutable modules : string list;
@@ -22,7 +23,10 @@ type scenario = {
 
 let init_scenario () = 
   {duration=60; backend=NS3; nodes=(Hashtbl.create 64); links=[];
-    name="";modules=[];}
+    name="";modules=[]; log_server=None; }
+
+let set_scenario_log_server sc value =  sc.log_server <- value
+let get_scenario_log_server sc = sc.log_server
 
 let set_scenario_duration sc d = sc.duration <- d
 let get_scenario_duration sc = sc.duration

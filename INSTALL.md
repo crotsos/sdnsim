@@ -18,5 +18,6 @@ sudo apt-get install libns3-3 libns3-dev
 
 opam remote add signpostd git://github.com/crotsos/opam-repo-dev.git
 opam switch 4.00.1+mirage-ns3-direct
-
+opam install mirage mirage-net openflow rpc oasis-mirage pttcp
+opam install sdnsim 
 

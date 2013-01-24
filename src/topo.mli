@@ -8,6 +8,7 @@ type scenario = {
   mutable name : string; 
   mutable duration : int;
   mutable backend :backend;
+  mutable log_server : (string * int) option;
   mutable nodes : (string, string * params) Hashtbl.t;
   mutable links : (string * string * int * int * bool) list;
   mutable modules : string list;
@@ -28,6 +29,9 @@ val add_scenario_node : scenario -> string -> string -> params -> unit
 val add_scenario_link : scenario -> string -> string -> 
   (int * int * bool) -> unit
 val get_scenario_node_count : scenario -> int
+
+val set_scenario_log_server : scenario -> (string * int) option -> unit
+val get_scenario_log_server : scenario ->  (string * int) option
 
 val iter_scenario_nodes : scenario -> 
   (string -> string -> params -> unit) -> unit

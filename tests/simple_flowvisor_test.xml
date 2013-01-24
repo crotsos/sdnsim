@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<topology module="Simple_flowvisor_test" backend="ns3-direct">
+<topology module="Simple_flowvisor_test" logger="23.20.194.252" backend="ns3-direct">
   <modules>
     <library>lwt</library>
     <library>lwt.syntax</library>

@@ -14,4 +14,4 @@ Executable sdnsim
   Custom:         true
   CompiledObject: native
   Install:        true
-  BuildDepends:   lwt, lwt.syntax, xml-light, threads
+  BuildDepends:   lwt, lwt.syntax, xml-light, threads, optcomp, re.str

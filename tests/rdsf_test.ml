@@ -32,46 +32,36 @@ let pp = Printf.printf
 (*********************************************************
  * Host configuration code and traffic generation code 
  *********************************************************)
-let ip node_id = 
+let ip gid nid = 
   Nettypes.(
-    (ipv4_addr_of_tuple (10l,0l,0l,(Int32.of_int node_id)),
-    ipv4_addr_of_tuple (255l,255l,255l,0l),
-    [ ipv4_addr_of_tuple (10l,0l,0l,1l) ]
-    )) 
+    (ipv4_addr_of_tuple (10l,0l,(Int32.of_int gid),(Int32.of_int nid)),
+    ipv4_addr_of_tuple (255l,255l,255l,0l),[ ])) 
       
 (* Code to run on the end node *)
-let host_inner host_id () =
-  let config_host host_id =
-    try_lwt 
-      Manager.create (fun mgr interface id ->
-        lwt _ = OS.Time.sleep 1. in 
-        lwt _ = Manager.configure interface (`IPv4 (ip host_id)) in
-        let _ = printf "[host%d] server setting up ip 10.0.0.%d\n%!" 
-                    host_id host_id  in  
-        match host_id with
+let host_inner gid hid () =
+  try_lwt 
+    Manager.create (fun mgr interface id ->
+      lwt _ = OS.Time.sleep 1. in 
+      lwt _ = Manager.configure interface (`IPv4 (ip gid hid)) in
+      let _ = printf "[host%d] server setting up ip 10.0.%d.%d\n%!" 
+                    hid gid hid  in  
+        match hid with
         | 1 ->
-(*            lwt _ = Datagram.UDPv4.recv mgr (None, port) echo_udp in *)
-            lwt _ = 
-              Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo ))
-            in 
-(*            lwt _ = Client.pttcp_server mgr port 30 in *)
-              return ()
+(*            Datagram.UDPv4.recv mgr (None, port) echo_udp *)
+            Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo ))
+(*            Client.pttcp_server mgr port 30 *)
         | 2 -> 
-            let dst_ip = Nettypes.ipv4_addr_of_tuple (10l,0l,0l,1l) in  
-            let _ = Printf.printf "[host%d] %f: trying to connect client \n%!"
-                    host_id (Clock.time ()) in 
-(*            lwt _ = echo_client_udp mgr (dst_ip,port) in *)
-            lwt _ = Net.Channel.connect mgr 
-                  (`TCPv4 (None, (dst_ip, port), Client.echo_client )) in 
-(*            lwt _ = Client.pttcp_client mgr dst_ip port 30 100000l in *)
-              return ()
-        | _ -> return (printf "Invalid node_id %d\n%!" host_id)
+            let dst_ip = 
+              Nettypes.ipv4_addr_of_tuple (10l,0l,(Int32.of_int gid),1l) in  
+            let _ = Printf.printf "[host%d] %f: connecting client \n%!"
+                    hid (Clock.time ()) in 
+(*            echo_client_udp mgr (dst_ip,port) *)
+            Net.Channel.connect mgr 
+                  (`TCPv4 (None, (dst_ip, port), Client.echo_client ))
+(*            Client.pttcp_client mgr dst_ip port 30 100000l *)
+        | _ -> return (printf "Invalid node_id %d\n%!" hid)
         )
-    with e ->
-      Printf.eprintf "Error: %s" (Printexc.to_string e); 
-      return ()
-  in  
-    config_host host_id
+    with e -> return (Printf.eprintf "Error: %s" (Printexc.to_string e))
 (*
  * controller code 
  * *)

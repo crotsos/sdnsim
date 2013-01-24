@@ -1,3 +1,6 @@
+#let BUILD_XEN = false
+
+#if BUILD_XEN
 open Lwt
 open Lwt_unix
 open Printf
@@ -199,3 +202,10 @@ let run_code module_name duration nodes links =
     with _ -> 
       lwt _ = clean_up_vm ses in 
         return ()
+
+#else
+
+let generate_scenario sc = ()
+let run_scenario sc = ()
+
+#endif

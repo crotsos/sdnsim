@@ -3,6 +3,24 @@ open Xml
 open Lwt
 open Topo
 
+let log_server_port = 8124
+
+let get_logging_server_attrib el = 
+  try
+    let log = Xml.attrib el "logger" in
+      match (Re_str.split (Re_str.regexp ":") log ) with 
+      | [server] -> 
+          let _ = printf "XXXXXXX returning server %s:%d\n%!" server 
+                  log_server_port in 
+          Some (server, log_server_port)
+      | server::port:: _  -> 
+          let _ = printf "XXXXXXX returning server %s:%s\n%!" server 
+                  port in 
+          Some (server, (int_of_string port))
+      | _ -> None
+  with Xml.No_attribute _ -> 
+    let _ = printf "XXXXXXX no logging service\n%!" in 
+      None
 
 (* Augment the xml parsing functions *)
 let get_attrib_fail el name = 
@@ -26,6 +44,8 @@ let parse_xm_file file =
 
   (* read configuration files details *)
   let _ = set_scenario_name sc (get_attrib_fail xml "module") in  
+  let _ = set_scenario_log_server sc 
+          (get_logging_server_attrib xml) in  
   let _ = set_scenario_backend sc 
             (get_attrib_default xml "backend" "ns3-direct") in 
   let _ = 

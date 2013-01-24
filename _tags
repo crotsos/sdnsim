@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 6b0094e78ddf38a23d05fab2729cf2ca)
+# DO NOT EDIT (digest: 08de11e0814cfe82716154eb04b8e88d)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -18,9 +18,13 @@
 "src/sdnsim.native": pkg_lwt.syntax
 "src/sdnsim.native": pkg_xml-light
 "src/sdnsim.native": pkg_threads
+"src/sdnsim.native": pkg_optcomp
+"src/sdnsim.native": pkg_re.str
 <src/*.ml{,i}>: pkg_lwt
 <src/*.ml{,i}>: pkg_lwt.syntax
 <src/*.ml{,i}>: pkg_xml-light
 <src/*.ml{,i}>: pkg_threads
+<src/*.ml{,i}>: pkg_optcomp
+<src/*.ml{,i}>: pkg_re.str
 "src/sdnsim.native": custom
 # OASIS_STOP
