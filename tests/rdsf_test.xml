@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
+<!-- <topology module="Rdsf_test" logger="23.20.194.252" backend="ns3-direct"> -->
 <topology module="Rdsf_test" logger="23.20.194.252" backend="ns3-direct">
   <modules>
-    <library>lwt</library>
+   <library>lwt</library>
     <library>lwt.syntax</library>
     <library>cstruct</library>
     <library>cstruct.syntax</library>
@@ -9,6 +10,7 @@
     <library>mirage-net</library>
     <library>openflow</library>
     <library>pttcp</library>
+    <library>uri</library>
   </modules>
  <duration>10</duration>
  <node name="switch1" main="switch_inner"> 
@@ -23,25 +25,34 @@
   <node name="switch4" main="switch_inner"> 
     <param>4</param>
   </node>
+
   <node name="flv" main="flowvisor_inner"/> 
-  <node name="controller" main="controller_inner"/> 
+  <node name="controller1" main="controller_inner"> 
+    <param>0</param></node>
+  <node name="controller2" main="controller_inner"> 
+    <param>1</param></node>
+  <node name="router" main="router_inner"/> 
+
+
+  <!-- <node name="controller" main="controller_inner"/>  -->
+  
   <node name="node1" main="host_inner">
-    <param>1</param>
-    <param>1</param>
+    <param>0</param>
+    <param>2</param>
   </node>
   <node name="node2" main="host_inner"> 
-    <param>2</param>
     <param>1</param>
+    <param>2</param>
   </node>
   <node name="node3" main="host_inner"> 
-    <param>1</param>
-    <param>2</param>
+    <param>0</param>
+    <param>3</param>
   </node>
   <node name="node4" main="host_inner"> 
-    <param>2</param>
-    <param>2</param>
+    <param>1</param>
+    <param>3</param>
   </node>
-   <link src="switch3" dst="switch4" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="switch3" dst="switch4" delay="10" rate="10" queue_size="100" pcap="true"/>
   <link src="switch2" dst="switch3" delay="10" rate="10" queue_size="100" pcap="true"/>
   <link src="switch1" dst="switch2" delay="10" rate="10" queue_size="100" pcap="true"/>
   
@@ -54,7 +65,11 @@
   <link src="switch3" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
   <link src="switch2" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
   <link src="switch1" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
-  
+  <!--  
   <link src="controller" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
+  -->
+  <link src="router" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="controller2" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="controller1" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
 
 </topology>
