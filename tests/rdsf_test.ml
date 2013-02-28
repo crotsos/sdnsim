@@ -70,8 +70,8 @@ let host_inner gid hid () =
 (*            echo_client_udp mgr (dst_ip,port) *)
 (*            Net.Channel.connect mgr 
                   (`TCPv4 (None, (loc_dst_ip, port), Client.echo_client )) *)
-            Client.pttcp_client mgr rem_dst_ip port 5 1000000l<&> 
-            Client.pttcp_client mgr loc_dst_ip port 5 1000000l
+            Client.pttcp_client mgr rem_dst_ip port 5 10000000l<&> 
+            Client.pttcp_client mgr loc_dst_ip port 5 10000000l
         | _ -> return (printf "Invalid node_id %d\n%!" hid)
         )
     with e -> return (Printf.eprintf "Error: %s" (Printexc.to_string e))

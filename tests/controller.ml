@@ -53,8 +53,8 @@ let packet_in_cb ?(handle_arp=true) name switch_data controller dpid evt =
 
   (* Parse Ethernet header *)
   let m = OP.Match.raw_packet_to_match in_port data in 
-  let _ = printf "[openflow] received a packet from ip %s on ctrl %s\n%!" 
-          (Uri_IP.ipv4_to_string m.OP.Match.nw_src) name in 
+(*  let _ = printf "[openflow] received a packet from ip %s on ctrl %s\n%!" 
+          (Uri_IP.ipv4_to_string m.OP.Match.nw_src) name in *)
 
   (* Store src mac address and incoming port *)
   match (handle_arp, m.OP.Match.dl_type) with
@@ -140,13 +140,6 @@ let test_packet_out controller dpid actions data in_port =
   let buffer_id = -1l in 
   let bs = OP.Packet_out.create ~buffer_id ~actions ~data ~in_port () in
   let h = OP.Header.create OP.Header.PACKET_OUT 0 in
-(*  lwt _ = OC.send_data controller dpid (OP.Packet_out (h, bs)) in
-  lwt _ = OC.send_data controller dpid (OP.Packet_out (h, bs)) in
-  lwt _ = OC.send_data controller dpid (OP.Packet_out (h, bs)) in
-  lwt _ = OC.send_data controller dpid (OP.Packet_out (h, bs)) in
-  lwt _ = OC.send_data controller dpid (OP.Packet_out (h, bs)) in
-  lwt _ = OC.send_data controller dpid (OP.Packet_out (h, bs)) in
-  lwt _ = OC.send_data controller dpid (OP.Packet_out (h, bs)) in*)
     return ()
 
 let router_packet_in_cb name switch_data controller dpid evt =
@@ -159,10 +152,10 @@ let router_packet_in_cb name switch_data controller dpid evt =
 
   (* Parse Ethernet header *)
   let m = OP.Match.raw_packet_to_match in_port data in 
-  let _ = printf "[openflow] received a packet %s - %s %x on ctrl %s\n%!" 
+(*  let _ = printf "[openflow] received a packet %s - %s %x on ctrl %s\n%!" 
           (Uri_IP.ipv4_to_string m.OP.Match.nw_src) 
           (Uri_IP.ipv4_to_string m.OP.Match.nw_dst) 
-          m.OP.Match.dl_type name in 
+          m.OP.Match.dl_type name in *)
   
   let ix = m.OP.Match.dl_src in
   let _ = Hashtbl.replace switch_data.mac_cache ix in_port in
@@ -212,44 +205,8 @@ let router_packet_in_cb name switch_data controller dpid evt =
       OC.send_data controller dpid (OP.Flow_mod (h, pkt)) 
      with Not_found -> return ()
   end
-(*  | 0x0800 
-  | 0x0806 -> begin 
-    (* check if I know the output port in order to define what type of message
-     * we need to send *)
-    let ix = m.OP.Match.dl_dst in
-    if ( (ix = "\xff\xff\xff\xff\xff\xff")
-        || (not (Hashtbl.mem switch_data.mac_cache ix)) ) then (
-          let bs =
-            (OP.Packet_out.create ~buffer_id:buffer_id
-              ~actions:[ OP.(Flow.Output(Port.All, 2000))]
-              ~data:data ~in_port:in_port () ) in
-          let h = OP.Header.create OP.Header.PACKET_OUT 0 in
-            OC.send_data controller dpid (OP.Packet_out (h, bs))
-    ) else (
-          let out_port = (Hashtbl.find switch_data.mac_cache ix) in
-          let flags = OP.Flow_mod.({send_flow_rem=true; emerg=false; overlap=false;}) in 
-          lwt _ =
-            if (buffer_id = -1l) then
-            (* Need to send also the packet in cache the packet is not cached *)
-              let bs =
-                OP.Packet_out.create
-                   ~buffer_id:buffer_id
-                   ~actions:[ OP.(Flow.Output(out_port, 2000))]
-                   ~data:data ~in_port:in_port ()  in
-              let h = OP.Header.create OP.Header.PACKET_OUT 0 in
-                OC.send_data controller dpid (OP.Packet_out (h, bs))
-            else
-              return ()
-          in
-          let pkt =
-            (OP.Flow_mod.create m 0_L OP.Flow_mod.ADD ~hard_timeout:0
-                 ~idle_timeout:0 ~buffer_id:(Int32.to_int buffer_id)  ~flags
-                 [OP.Flow.Output(out_port, 2000)] ()) in
-          let h = OP.Header.create OP.Header.FLOW_MOD 0 in
-             OC.send_data controller dpid (OP.Flow_mod (h, pkt)) )    
-  end *)
-   | (_) -> 
-       let _ = printf "XXXXXX No idea what this is\n%!" in 
+  | (_) -> 
+       (* let _ = printf "XXXXXX No idea what this is\n%!" in *)
        return ()
      
 let init ?(handle_arp=true) name switch_data st = 

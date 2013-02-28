@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- <topology module="Rdsf_test" logger="23.20.194.252" backend="ns3-direct"> -->
-<topology module="Rdsf_test" duration="30" backend="ns3-direct">
+<topology module="Rdsf_test" duration="15" backend="ns3-direct">
   <modules>
    <library>lwt</library>
     <library>lwt.syntax</library>
@@ -52,24 +52,24 @@
     <param>1</param>
     <param>3</param>
   </node>
-  <link src="switch3" dst="switch4" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="switch2" dst="switch3" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="switch1" dst="switch2" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="switch3" dst="switch4" delay="10" rate="10000" queue_size="100" pcap="false"/>
+  <link src="switch2" dst="switch3" delay="10" rate="10000" queue_size="100" pcap="true"/>
+  <link src="switch1" dst="switch2" delay="10" rate="10000" queue_size="100" pcap="false"/>
   
-  <link src="node4" dst="switch4" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node3" dst="switch3" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node2" dst="switch2" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node1" dst="switch1" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="node4" dst="switch4" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="node3" dst="switch3" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="node2" dst="switch2" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="node1" dst="switch1" delay="10" rate="1000" queue_size="100" pcap="false"/>
 
-  <link src="switch4" dst="flv" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="switch3" dst="flv" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="switch2" dst="flv" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="switch1" dst="flv" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="switch4" dst="flv" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="switch3" dst="flv" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="switch2" dst="flv" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="switch1" dst="flv" delay="10" rate="1000" queue_size="100" pcap="false"/>
   <!--  
-  <link src="controller" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="controller" dst="flv" delay="10" rate="10" queue_size="100" pcap="false"/>
   -->
-  <link src="router" dst="flv" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="controller2" dst="flv" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="controller1" dst="flv" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="router" dst="flv" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="controller2" dst="flv" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="controller1" dst="flv" delay="10" rate="1000" queue_size="100" pcap="false"/>
 
 </topology>

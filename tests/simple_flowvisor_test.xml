@@ -32,18 +32,18 @@
   <node name="node2" main="host_inner"> 
     <param>2</param>
   </node>
-  <link src="switch3" dst="switch4" delay="10" rate="10" queue_size="100" pcap="true"/>
-  <link src="switch2" dst="switch3" delay="10" rate="10" queue_size="100" pcap="true"/>
-  <link src="switch1" dst="switch2" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="switch3" dst="switch4" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch2" dst="switch3" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch1" dst="switch2" delay="10" rate="10" queue_size="100" pcap="false"/>
   
-  <link src="node2" dst="switch4" delay="10" rate="10" queue_size="100" pcap="true"/>
-  <link src="node1" dst="switch1" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node2" dst="switch4" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="node1" dst="switch1" delay="10" rate="10" queue_size="100" pcap="false"/>
 
-  <link src="switch4" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
-  <link src="switch3" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
-  <link src="switch2" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
-  <link src="switch1" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="switch4" dst="flv" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch3" dst="flv" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch2" dst="flv" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch1" dst="flv" delay="10" rate="10" queue_size="100" pcap="false"/>
   
-  <link src="controller" dst="flv" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="controller" dst="flv" delay="10" rate="10" queue_size="100" pcap="false"/>
 
 </topology>
