@@ -84,8 +84,10 @@ let controller_inner () =
           ipv4_addr_of_tuple (255l,255l,255l,0l), [])) in  
      lwt _ = Manager.configure interface (`IPv4 ip) in
      let dst = (None, 6633) in 
-        OC.listen mgr dst Controller.init 
-      )
+        OC.listen mgr dst 
+          (Controller.init ~handle_arp:true "controller" 
+            (Controller.sw_data ()) )
+          )
   with exn -> 
     return (printf "%f: controller error: %s\n%!" (Clock.time ()) 
             (Printexc.to_string exn))
@@ -114,7 +116,6 @@ let flowvisor_inner () =
                      (ipv4_addr_of_tuple (192l, 168l, 0l, 1l),
                       ipv4_addr_of_tuple (255l,255l,255l,0l), [])) in  
                       lwt _ = Manager.configure interface (`IPv4 ip) in
-                 let _ = printf "XXXXXXX found intf 0\n%!" in
                  lwt _ = init_slice mgr sw in 
                   return ()
              | _ -> 
@@ -157,7 +158,6 @@ let switch_inner switch_id () =
                ("name", (Rpc.String node_name));
                ("dev_id", (Rpc.String id));
                ("ip", (Rpc.String ""));] in
-             let _ = printf "XXXXXXXXX %s\n%!" (Jsonrpc.to_string msg) in 
              let _ = OS.Console.broadcast "node_dev" (Jsonrpc.to_string msg) in 
                Openflow.Ofswitch.add_port mgr sw id
     )

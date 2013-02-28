@@ -77,7 +77,8 @@ let controller_inner () =
           ipv4_addr_of_tuple (255l,255l,255l,0l), [])) in  
      lwt _ = Manager.configure interface (`IPv4 ip) in
       let dst = ((Nettypes.ipv4_addr_of_tuple (10l,0l,0l,1l)), 6633) in 
-        OC.connect mgr dst Controller.init 
+        OC.connect mgr dst (Controller.init ~handle_arp:true "ctrl"
+        (Controller.sw_data ()))
       )
   with exn -> 
     return (printf "%f: controller error: %s\n%!" (Clock.time ()) 
@@ -94,7 +95,7 @@ let print_time () =
   done
 
 let switch_inner () = 
-  let sw = Openflow.Ofswitch.create_switch () in
+  let sw = Openflow.Ofswitch.create_switch 0x1L in
   try_lwt 
     Manager.create 
     (fun mgr interface id ->

@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
-<topology module="Simple_openflow_test" backend="ns3-direct">
+<topology module="Simple_openflow_test" backend="ns3-direct" duration="30">
   <modules>
+    <library>uri</library>
     <library>lwt</library>
     <library>lwt.syntax</library>
     <library>cstruct</library>
@@ -8,6 +9,7 @@
     <library>mirage</library>
     <library>mirage-net</library>
     <library>openflow</library>
+    <library>pttcp</library>
   </modules>
   <node name="node1" main="host_inner"> 
     <param>1</param>

@@ -59,8 +59,8 @@ let host_inner gid hid () =
         match hid with
         | 2 ->
 (*            Datagram.UDPv4.recv mgr (None, port) echo_udp *)
-(*            Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo ))*)
-            Client.pttcp_server mgr port 5
+(*            Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo )) *)
+            Client.pttcp_server mgr port 5 
         | 3 ->
             let dst_gid = (gid + 1) mod 2 in 
             let rem_dst_ip = 
@@ -69,9 +69,9 @@ let host_inner gid hid () =
               ipv4_addr_of_tuple (10l,0l,(Int32.of_int gid),2l) in  
 (*            echo_client_udp mgr (dst_ip,port) *)
 (*            Net.Channel.connect mgr 
-                  (`TCPv4 (None, (dst_ip, port), Client.echo_client ))*)
-(*            Client.pttcp_client mgr rem_dst_ip port 5 100000l<&> *)
-            Client.pttcp_client mgr loc_dst_ip port 5 100000l 
+                  (`TCPv4 (None, (loc_dst_ip, port), Client.echo_client )) *)
+            Client.pttcp_client mgr rem_dst_ip port 5 1000000l<&> 
+            Client.pttcp_client mgr loc_dst_ip port 5 1000000l
         | _ -> return (printf "Invalid node_id %d\n%!" hid)
         )
     with e -> return (Printf.eprintf "Error: %s" (Printexc.to_string e))
