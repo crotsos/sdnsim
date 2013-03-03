@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<!-- <topology module="Rdsf_test" logger="23.20.194.252" backend="ns3-direct"> -->
+<topology module="Fat_tree_test" duration="30" backend="ns3-direct" logger="23.20.194.252">
+  <modules>
+   <library>lwt</library>
+    <library>lwt.syntax</library>
+    <library>cstruct</library>
+    <library>cstruct.syntax</library>
+    <library>mirage</library>
+    <library>mirage-net</library>
+    <library>openflow</library>
+    <library>pttcp</library>
+    <library>uri</library>
+  </modules>
+
+
+ <!-- pod 0 -->
+  <node name="switch_0_0" main="switch_inner">
+    <param name="pod">0</param> <param name="swid">0</param> 
+  </node>
+  <node name="switch_0_1" main="switch_inner">
+    <param name="pod">0</param> <param name="swid">1</param> 
+  </node>
+  <node name="switch_0_2" main="switch_inner">
+    <param name="pod">0</param> <param name="swid">2</param> 
+  </node>
+  <node name="switch_0_3" main="switch_inner">
+    <param name="pod">0</param> <param name="swid">3</param> 
+  </node>
+
+  <node name="node_0_0_2" main="host_inner">
+    <param name="pod">0</param> <param name="swid">0</param>
+    <param name="hid">2</param> </node>
+  <node name="node_0_0_3" main="host_inner">
+    <param name="pod">0</param> <param name="swid">0</param>
+    <param name="hid">3</param> </node>
+  <node name="node_0_1_2" main="host_inner">
+    <param name="pod">0</param> <param name="swid">1</param>
+    <param name="hid">2</param> </node>
+  <node name="node_0_1_3" main="host_inner">
+    <param name="pod">0</param> <param name="swid">1</param>
+    <param name="hid">3</param> </node>
+  
+  <link src="switch_0_3" dst="switch_0_1" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="switch_0_2" dst="switch_0_1" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="switch_0_3" dst="switch_0_0" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  <link src="switch_0_2" dst="switch_0_0" delay="10" rate="1000" queue_size="100" pcap="false"/>
+  
+  <link src="node_0_0_3" dst="switch_0_0" delay="10" rate="1000" queue_size="100" pcap="true"/>
+  <link src="node_0_0_2" dst="switch_0_0" delay="10" rate="1000" queue_size="100" pcap="true"/>
+  <link src="node_0_1_3" dst="switch_0_1" delay="10" rate="1000" queue_size="100" pcap="true"/>
+  <link src="node_0_1_2" dst="switch_0_1" delay="10" rate="1000" queue_size="100" pcap="true"/>
+</topology>

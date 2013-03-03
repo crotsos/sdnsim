@@ -16,9 +16,11 @@ let rec echo dst chan =
     lwt _ =
       while_lwt true do
         lwt buf = Channel.read_some chan in
-(*        let _ = Printf.printf "%f: read %d\n%!" 
+(*
+        let _ = Printf.printf "%f: read %d\n%!" 
          (Clock.time ())
-         (Cstruct.len buf) in *)
+         (Cstruct.len buf) in 
+*)
           return () 
       done
     in
@@ -30,7 +32,8 @@ let rec echo_client chan =
     let data = String.create 1460 in 
     let rec send_data () = 
         let _ = Channel.write_string chan data 0 (String.length data) in
-(*         Printf.printf "%f: Writing new buffer....\n%!" (Clock.time ());   *)
+(*          Printf.printf "%f: Writing new buffer....\n%!" (Clock.time ());
+ *          *)
         lwt _ = Channel.flush chan in
         lwt _ = send_data () in 
           return ()
@@ -51,7 +54,9 @@ let rec echo_client_udp mgr dst =
     let rec send_data () = 
         lwt _ = Datagram.UDPv4.send mgr dst data in
         lwt () = Time.sleep 1.0 in
+(*
           Printf.printf "%f: Writing new buffer....\n%!" (Clock.time ()); 
+*)
           send_data ()
     in
       send_data ()
