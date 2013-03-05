@@ -248,13 +248,17 @@ let fib_match st dst_ip =
     let netmask = Int32.shift_left 0xffffffffl (32 - mask) in 
       (Int32.logand netmask dst_ip) = (Int32.logand netmask ip)
   in
-  List.fold_right (
+  let (m, p) = List.fold_right (
     fun (ip, mask, port) (m, p) -> 
       if ((m <= mask) && (ip_match ip mask dst_ip)) then 
           (mask, port)
         else
           (m,p)
-  ) st.fib (0, 0)
+  ) st.fib (0, 0) in 
+  if (m = 0) then 
+    failwith (sprintf "Invalid IP address %lx" dst_ip ) 
+  else 
+    (m, p)
 
 let fat_tree_ip pod swid hid = 
   Int32.add 0x0a000000l
@@ -338,14 +342,14 @@ let init_fat_tree pod swid name switch_data st =
   let _ = 
     if (swid < 2) then 
       switch_data.fib <- 
-        [((fat_tree_ip pod swid 2) , 32, 11);
-        ((fat_tree_ip pod swid 3), 32, 12); 
-        (0x0a000000l, 8, 13)]
+        [((fat_tree_ip pod swid 2) , 32, 10);
+        ((fat_tree_ip pod swid 3), 32, 11); 
+        (0x0a000000l, 8, 12)]
     else 
       switch_data.fib <- 
-        [((fat_tree_ip pod 0 0), 24, 11); 
-        ((fat_tree_ip pod 1 0), 24, 12); 
-        (0x0a000000l, 8, 13)]
+        [((fat_tree_ip pod 0 0), 24, 10); 
+        ((fat_tree_ip pod 1 0), 24, 11); 
+        (0x0a000000l, 8, 12)]
   in
   let _ = OC.register_cb st OE.DATAPATH_JOIN (datapath_join_cb switch_data 
         ~ip:(Some(fat_tree_ip pod swid 1))) in
@@ -361,11 +365,11 @@ let init_fat_tree_core pod i j name switch_data st =
   (* create the fib *)
   let _ = 
       switch_data.fib <- 
-        [((fat_tree_ip pod 0 0) , 24, 11);
-        ((fat_tree_ip pod 1 0), 24, 12); 
-        ((fat_tree_ip pod 2 0), 24, 13); 
-        ((fat_tree_ip pod 3 0), 24, 14); 
-        (0x0a000000l, 8, 13)]
+        [((fat_tree_ip 0 0 0) , 16, 10);
+        ((fat_tree_ip 1 0 0), 16, 11); 
+        ((fat_tree_ip 2 0 0), 16, 12); 
+        ((fat_tree_ip 3 0 0), 16, 13); 
+        (* (0x0a000000l, 8, 13) *) ]
   in
   let _ = OC.register_cb st OE.DATAPATH_JOIN (datapath_join_cb switch_data 
         ~ip:(Some(fat_tree_ip 4 i j))) in

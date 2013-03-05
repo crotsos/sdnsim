@@ -32,8 +32,7 @@ let rec echo_client chan =
     let data = String.create 1460 in 
     let rec send_data () = 
         let _ = Channel.write_string chan data 0 (String.length data) in
-(*          Printf.printf "%f: Writing new buffer....\n%!" (Clock.time ());
- *          *)
+(*           Printf.printf "%f: Writing new buffer....\n%!" (Clock.time ()); *)
         lwt _ = Channel.flush chan in
         lwt _ = send_data () in 
           return ()
