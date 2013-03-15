@@ -3,24 +3,27 @@
 <meta charset="utf-8">
 <link rel="canonical" href="http://d3js.org/">
 <title> sdnsim simulation visualisation </title>
+  <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
   <script src="http://d3js.org/d3.v2.js"></script>
+  <script src="js/bootstrap.min.js"></script>
   <link type="text/css" rel="stylesheet" href="mirage.css"/>
-  </head>
+  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
+</head>
 
   <body>
-    <center>
-      <h1>SDNSIM simulation visualisation</h1>
-      <div style="float:none;text-aligh:center">time:&nbsp;
-        <span id="timer"></span>
-      &nbsp; sec</div>
-    <div id="chart" style="width:100%"></div>
-  <script  type="text/javascript" src="mirage-display.js"></script>
-  <div style="">
-    <table id="flow_table" style="width:100%">
+    <div class="container text-center">
+      <div class="row"><h1>SDNSIM simulation visualisation</h1></div>
+      <div class="row">time:&nbsp;<span id="timer"/>&nbsp; sec</div>
+      </div>
+      <div class="row">
+        <div id="chart" style="width:100%"></div>
+        <script  type="text/javascript" src="mirage-display.js"></script>
+        <div style="">
+          <table class="table" id="flow_table" style="width:100%"/>
       <!--- <tr><td>hello</td></tr> -->
-    </table>
+        </div>
+      </div>
     </div>
-    </center>
   </body>
 
 </html>

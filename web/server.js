@@ -71,6 +71,7 @@ wsServer.on('request', function(request) {
   sockets.push(connection);
   //bootstrap client if the simulation has 
   //already started
+  console.log("new client connected");
   if (topology) {
     msg = {'ts':clock,"type":"topology",
     "data":JSON.stringify(topology)};

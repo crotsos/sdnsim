@@ -156,16 +156,18 @@ function(m) {
   }
 }; 
 
-var width = "100%",
-    height = 350;
+var width = "1152px",
+    height = "800px";
 
 var color = d3.scale.category20();
+// var force = d3.layout.force()
+//   //  .charge(-120)
+//   // .linkDistance(30)
+//   // .size([width, height])
+//   ;
 
-  var force = d3.layout.force().gravity(1).linkDistance(50).charge(-3000);
-  // .charge(-120)
-  // .linkDistance(30)
-//  .size([width, height]);
-
+var force = d3.layout.force().gravity(1).linkDistance(50).charge(-3000);
+ 
   var svg = d3.select("#chart").append("svg")
   .attr("width", width)
   .attr("height", height);
@@ -174,8 +176,11 @@ var color = d3.scale.category20();
     svg.selectAll(".link").remove();
     svg.selectAll(".node").remove();
 
+    // $.each (json.links, (function (d) {
+    //   d.x=0; d.y=0;d.x1=0; d.y1=0;d.x2=0; d.y2=0;}));
     force
-      .nodes(json.nodes).charge(-100)
+      .nodes(json.nodes)
+      .charge(-100)
       .links(json.links)
       .gravity(0)
       .linkDistance(100)
@@ -183,6 +188,15 @@ var color = d3.scale.category20();
       .charge(-100)
       .start();
 
+    // force
+    //   .nodes(json.nodes).charge(-100)
+    //   .links(json.links)
+    //   .gravity(0)
+    //   .linkDistance(100)
+    //   .linkStrength(8)
+    //   .charge(-100)
+    //   .start();
+    
     var link = svg.selectAll(".link")
       .data(json.links)
       .enter().append("line")
@@ -228,6 +242,6 @@ var color = d3.scale.category20();
       function(d) { 
         return "translate(" + d.x + "," + d.y + ")"; 
       });
-    });
+    }); 
   }
 
