@@ -62,8 +62,8 @@ let host_inner ~pod ~swid ~hid () =
         match hid with
         | 2 ->
 (*            Datagram.UDPv4.recv mgr (None, port) echo_udp *)
-(*            Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo )) *)
-            Client.pttcp_server mgr port 5 
+(*           Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo ))   *)
+          Client.pttcp_server mgr port 5 
         | 3 ->
           lwt _ = Time.sleep 1.0 in 
           let dst_pod = (pod + 1) mod 4 in 
@@ -75,10 +75,11 @@ let host_inner ~pod ~swid ~hid () =
             ipv4_addr_of_tuple (10l,(Int32.of_int dst_pod),(Int32.of_int
             dst_swid),2l) in  
 (*            echo_client_udp mgr (dst_ip,port) *)
-(*            Net.Channel.connect mgr 
-              (`TCPv4 (None, (loc_dst_ip, port), Client.echo_client )) *)
+(*             Net.Channel.connect mgr  
+               (`TCPv4 (None, (loc_dst_ip, port), Client.echo_client ))  *)
 (*            Client.pttcp_client mgr rem_dst_ip port 5 10000000l<&> *)
-            Client.pttcp_client mgr loc_dst_ip port 5 100000l
+            Client.pttcp_client mgr loc_dst_ip port 5 1000000l
+
         | _ -> return (printf "Invalid node_id %d\n%!" hid)
         )
     with e -> return (Printf.eprintf "Error: %s" (Printexc.to_string e))
@@ -91,7 +92,7 @@ let switch_inner ~pod ~swid () =
   let ip = Controller.fat_tree_ip pod swid 1 in 
   let switch_data = Controller.sw_data () in 
   let sw = OSW.create_switch ~verbose dpid in
-  let flv = OF.create_flowvisor () in 
+  let flv = OF.create_flowvisor ~verbose () in 
   let ctrl = OC.init_controller ~verbose () in 
   let (ctrl_ch1, ctrl_ch2) = OSK.init_local_conn_state () in 
   let (sw_ch1, sw_ch2) = OSK.init_local_conn_state () in
@@ -223,7 +224,6 @@ let core_switch_inner ~pod ~i ~j () =
 
   (* start local controller and local flowvisor threads in run mode *)
   let name = sprintf "core_%d_%d" i j in
-  let _ = printf "XXXXXXXXXXXXXX running node %s\n%!" name in 
   let _ = ignore_result (OF.local_listen flv sw_ch1) in
   let _ = ignore_result 
           (OC.local_connect ctrl ctrl_ch1 (Controller.init_fat_tree_core pod i j

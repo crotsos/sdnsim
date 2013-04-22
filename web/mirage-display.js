@@ -74,7 +74,7 @@ function update_table(d) {
 
 window.WebSocket = window.WebSocket || window.MozWebSocket;
 
-var connection = new WebSocket('ws://sdnsim:1337');
+var connection = new WebSocket('ws://localhost:1337');
 var name_to_index = [];
 connection.onmessage = 
 function(m) {

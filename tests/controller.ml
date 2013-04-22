@@ -22,12 +22,14 @@ type mac_switch = {
 }
 
 type switch_state = {
-  mutable fib : (int32 * int * int) list;
+  mutable fib : (int32 * int * int list) list;
   mac_cache: (OP.eaddr, OP.Port.t) Hashtbl.t;
   ip_cache : (int32, OP.eaddr) Hashtbl.t;
   mutable dpid: OP.datapath_id list;
   mutable of_ctrl: OC.t list;
   req_count: int ref; 
+  port_load: (OP.Port.t, float) Hashtbl.t; 
+  flows : (OP.Match.t, OP.Port.t *int64 * int64) Hashtbl.t;
 }
 
 cstruct arp {
@@ -45,51 +47,72 @@ cstruct arp {
   uint32_t tpa
 } as big_endian
 
-let get_arp_reply mac dst_ip src_ip = 
+let get_arp_reply src_mac dst_mac dst_ip src_ip = 
   let buf = OS.Io_page.to_cstruct (OS.Io_page.get ()) in 
-  let _ = set_arp_dst mac 0 buf in 
-  let _ = set_arp_src "\xfe\xff\xff\xff\xff\xff" 0 buf in 
+  let _ = set_arp_dst dst_mac 0 buf in 
+  let _ = set_arp_src src_mac 0 buf in 
   let _ = set_arp_ethertype buf 0x0806 in  (* ARP *)
   let _ = set_arp_htype buf 1 in
   let _ = set_arp_ptype buf 0x0800 in  (* IPv4 *)
   let _ = set_arp_hlen buf 6 in  (* ethernet mac size *)
   let _ = set_arp_plen buf 4 in  (* ipv4 size *)
   let _ = set_arp_op buf 2 in 
-  let _ = set_arp_sha "\xfe\xff\xff\xff\xff\xff" 0 buf in 
+  let _ = set_arp_sha src_mac 0 buf in 
   let _ = set_arp_spa buf src_ip in 
-  let _ = set_arp_tha mac 0 buf in 
+  let _ = set_arp_tha dst_mac 0 buf in 
   let _ = set_arp_tpa buf dst_ip in 
   (* Resize buffer to sizeof arp packet *)
     Cstruct.sub buf 0 sizeof_arp
 
-  let create_gratituous_arp dl_src nw_src =
-    let bits = OS.Io_page.to_cstruct (OS.Io_page.get ()) in 
-    let _ = set_arp_dst "\xff\xff\xff\xff\xff\xff" 0 bits in
-    let _ = set_arp_src dl_src 0 bits in 
-    let _ = set_arp_ethertype bits 0x0806 in 
-    let _ = set_arp_htype bits 1 in 
-    let _ = set_arp_ptype bits 0x0800 in 
-    let _ = set_arp_hlen bits 6 in 
-    let _ = set_arp_plen bits 4 in 
-    let _ = set_arp_op bits 1 in 
-    let _ = set_arp_sha dl_src 0 bits in 
-    let _ = set_arp_spa bits nw_src in 
-    let _ = set_arp_tha "\x00\x00\x00\x00\x00\x00" 0 bits in 
-    let _ = set_arp_tpa bits nw_src in
-      Cstruct.sub bits 0 sizeof_arp
+let create_gratituous_arp dl_src nw_src =
+  get_arp_reply dl_src "\xff\xff\xff\xff\xff\xff" nw_src nw_src  
 
 let sw_data () = 
   { fib=[]; mac_cache = Hashtbl.create 0; dpid = []; of_ctrl = []; 
-  req_count=(ref 0);ip_cache = Hashtbl.create 0; } 
+  req_count=(ref 0);ip_cache = (Hashtbl.create 0); port_load=(Hashtbl.create 0);
+  flows=(Hashtbl.create 0);} 
 
-let datapath_join_cb switch_data ?(ip=None) controller dpid evt =
-  let dp = 
+let poll_flow_stats ctrl st dpid ts = 
+  let f = OP.Stats.({ty=0;flags=0;}) in 
+  let m = OP.Match.create_match () in 
+  let req = OP.Stats.Flow_req (f, m, OP.Stats.All, OP.Port.No_port) in  
+  let h = OP.Header.(create STATS_REQ 0) in
+  while_lwt true do
+    lwt _ = OS.Time.sleep ts in 
+      OC.send_data ctrl dpid (OP.Stats_req (h, req)) 
+  done 
+
+let test_packet_out controller dpid actions buffer_id data in_port = 
+  let bs = OP.Packet_out.create ~buffer_id ~actions ~data ~in_port () in
+  let h = OP.Header.create OP.Header.PACKET_OUT 0 in
+    OC.send_data controller dpid (OP.Packet_out (h, bs)) 
+
+let datapath_join_cb st ?(stats=None) ?(ip=None) controller dpid evt =
+  let dp, port = 
     match evt with
-      | OE.Datapath_join (c, _) -> c
+      | OE.Datapath_join (c, p) -> c, p
       | _ -> invalid_arg "bogus datapath_join event match!" 
   in
-  let _ = switch_data.dpid <- switch_data.dpid @ [dp] in 
+  let _ = printf "datapath 0x%Lx joined...\n%!" dpid in
+  let _ = List.iter 
+          (fun p -> 
+            Hashtbl.replace st.port_load (OP.Port.port_of_int p.OP.Port.port_no) 0.0 ) 
+          port in 
+  let _ = 
+    match stats with
+    | Some ts -> ignore_result (poll_flow_stats controller st dpid ts)
+    | None -> ()
+  in
+  let _ = st.dpid <- st.dpid @ [dp] in 
   return (pp "+ datapath:0x%012Lx\n" dp)
+
+let port_status_cb st ctrl dpid = function 
+  | OE.Port_status(OP.Port.ADD, p, dpid) ->
+    return (Hashtbl.replace st.port_load (OP.Port.port_of_int p.OP.Port.port_no) 0.0)
+  | OE.Port_status(OP.Port.DEL, p, dpid) -> 
+    return (Hashtbl.remove st.port_load (OP.Port.port_of_int p.OP.Port.port_no) )
+  | _ ->  return ()
+
 
 let packet_in_cb ?(handle_arp=true) name switch_data controller dpid evt =
   incr switch_data.req_count;
@@ -101,8 +124,6 @@ let packet_in_cb ?(handle_arp=true) name switch_data controller dpid evt =
 
   (* Parse Ethernet header *)
   let m = OP.Match.raw_packet_to_match in_port data in 
-(*  let _ = printf "[openflow] received a packet from ip %s on ctrl %s\n%!" 
-          (Uri_IP.ipv4_to_string m.OP.Match.nw_src) name in *)
 
   (* Store src mac address and incoming port *)
   match (handle_arp, m.OP.Match.dl_type) with
@@ -115,48 +136,38 @@ let packet_in_cb ?(handle_arp=true) name switch_data controller dpid evt =
     (* check if I know the output port in order to define what type of message
      * we need to send *)
     let ix = m.OP.Match.dl_dst in
-    if ( (ix = "\xff\xff\xff\xff\xff\xff")
-        || (not (Hashtbl.mem switch_data.mac_cache ix)) ) then (
-          let bs =
-            (OP.Packet_out.create ~buffer_id:buffer_id
-              ~actions:[ OP.(Flow.Output(m.OP.Match.in_port, 2000))]
-              ~data:data ~in_port:in_port () ) in
+      if ((ix = "\xff\xff\xff\xff\xff\xff") ||
+         (not (Hashtbl.mem switch_data.mac_cache ix)) ) then (
+        let bs =
+          (OP.Packet_out.create ~buffer_id
+          ~actions:[ OP.(Flow.Output(m.OP.Match.in_port, 2000))]
+          ~data ~in_port () ) in
           let h = OP.Header.create OP.Header.PACKET_OUT 0 in
             OC.send_data controller dpid (OP.Packet_out (h, bs))
-    ) else (
-          let out_port = (Hashtbl.find switch_data.mac_cache ix) in
-          let flags = OP.Flow_mod.({send_flow_rem=true; emerg=false; overlap=false;}) in 
-          lwt _ =
-            if (buffer_id = -1l) then
+      ) else (
+        let out_port = (Hashtbl.find switch_data.mac_cache ix) in
+        let flags = OP.Flow_mod.({send_flow_rem=true; emerg=false; overlap=false;}) in 
+        lwt _ =
+          if (buffer_id = -1l) then
             (* Need to send also the packet in cache the packet is not cached *)
-              let bs =
-                OP.Packet_out.create
-                   ~buffer_id:buffer_id
-                   ~actions:[ OP.(Flow.Output(out_port, 2000))]
-                   ~data:data ~in_port:in_port ()  in
-              let h = OP.Header.create OP.Header.PACKET_OUT 0 in
-                OC.send_data controller dpid (OP.Packet_out (h, bs))
+            let bs =
+              OP.Packet_out.create
+              ~buffer_id ~actions:[ OP.(Flow.Output(out_port, 2000))]
+              ~data ~in_port ()  in
+            let h = OP.Header.create OP.Header.PACKET_OUT 0 in
+              OC.send_data controller dpid (OP.Packet_out (h, bs))
             else
               return ()
-          in
-          let pkt =
-            (OP.Flow_mod.create m 0_L OP.Flow_mod.ADD ~hard_timeout:0
-                 ~idle_timeout:0 ~buffer_id:(Int32.to_int buffer_id)  ~flags
-                 [OP.Flow.Output(out_port, 2000)] ()) in
-          let h = OP.Header.create OP.Header.FLOW_MOD 0 in
-             OC.send_data controller dpid (OP.Flow_mod (h, pkt)) )    
+        in
+        let pkt =
+          (OP.Flow_mod.create m 0_L OP.Flow_mod.ADD ~hard_timeout:0
+          ~idle_timeout:0 ~buffer_id:(Int32.to_int buffer_id)  ~flags
+          [OP.Flow.Output(out_port, 2000)] ()) in
+        let h = OP.Header.create OP.Header.FLOW_MOD 0 in
+          OC.send_data controller dpid (OP.Flow_mod (h, pkt)) )    
   end
-  | (_, _) -> 
-    let ix = m.OP.Match.dl_src in
-    let _ = Hashtbl.replace switch_data.mac_cache ix in_port in
-      return ()
+  | (_, _) -> return (Hashtbl.replace switch_data.mac_cache m.OP.Match.dl_src in_port)
 
-
-let test_packet_out controller dpid actions data in_port = 
-  let buffer_id = -1l in 
-  let bs = OP.Packet_out.create ~buffer_id ~actions ~data ~in_port () in
-  let h = OP.Header.create OP.Header.PACKET_OUT 0 in
-    OC.send_data controller dpid (OP.Packet_out (h, bs)) 
 
 let router_packet_in_cb name switch_data controller dpid evt =
   incr switch_data.req_count;
@@ -168,10 +179,6 @@ let router_packet_in_cb name switch_data controller dpid evt =
 
   (* Parse Ethernet header *)
   let m = OP.Match.raw_packet_to_match in_port data in 
-(*  let _ = printf "[openflow] received a packet %s - %s %x on ctrl %s\n%!" 
-          (Uri_IP.ipv4_to_string m.OP.Match.nw_src) 
-          (Uri_IP.ipv4_to_string m.OP.Match.nw_dst) 
-          m.OP.Match.dl_type name in *)
   
   let ix = m.OP.Match.dl_src in
   let _ = Hashtbl.replace switch_data.mac_cache ix in_port in
@@ -187,7 +194,8 @@ let router_packet_in_cb name switch_data controller dpid evt =
   | (0x88cc) -> return ()
   | 0x0806 when (Int32.logand m.OP.Match.nw_dst 0xffl = 1l) -> 
       let ix = m.OP.Match.dl_src in
-      let data = get_arp_reply ix m.OP.Match.nw_src m.OP.Match.nw_dst in 
+      let data = get_arp_reply "\xfe\xff\xff\xff\xff\xff" ix 
+                    m.OP.Match.nw_src m.OP.Match.nw_dst in 
       let bs =
         (OP.Packet_out.create ~buffer_id:(-1l)
               ~actions:[ OP.(Flow.Output(OP.Port.All, 2000))]
@@ -206,13 +214,9 @@ let router_packet_in_cb name switch_data controller dpid evt =
                     OP.(Flow.Output(out_port, 2000))] in 
      lwt _ =
        if (buffer_id = -1l) then
-            (* Need to send also the packet in cache the packet is not cached *)
-         let bs =
-           OP.Packet_out.create ~buffer_id ~actions ~data ~in_port ()  in
-          let h = OP.Header.create OP.Header.PACKET_OUT 0 in
-            OC.send_data controller dpid (OP.Packet_out (h, bs))
+         (* Need to send also the packet in cache the packet is not cached *)
+         test_packet_out controller dpid actions buffer_id data in_port
         else return () in
-    lwt _ =  test_packet_out controller dpid actions data in_port in 
     let pkt =
         OP.Flow_mod.create m 0_L OP.Flow_mod.ADD ~hard_timeout:0
            ~idle_timeout:0 ~buffer_id:(Int32.to_int buffer_id)  ~flags
@@ -221,9 +225,7 @@ let router_packet_in_cb name switch_data controller dpid evt =
       OC.send_data controller dpid (OP.Flow_mod (h, pkt)) 
      with Not_found -> return ()
   end
-  | (_) -> 
-       (* let _ = printf "XXXXXX No idea what this is\n%!" in *)
-       return ()
+  | (_) -> return ()
      
 let init ?(handle_arp=true) name switch_data st = 
   if (not (List.mem st switch_data.of_ctrl)) then
@@ -231,19 +233,19 @@ let init ?(handle_arp=true) name switch_data st =
   OC.register_cb st OE.DATAPATH_JOIN (datapath_join_cb switch_data);
   OC.register_cb st OE.PACKET_IN (packet_in_cb ~handle_arp name switch_data)
 
-let init_router name switch_data st =
+let init_router name st ctrl =
   let _ = 
-    if (not (List.mem st switch_data.of_ctrl)) then
-      switch_data.of_ctrl <- (([st] @ switch_data.of_ctrl))
+    if (not (List.mem ctrl st.of_ctrl)) then
+      st.of_ctrl <- (([ctrl] @ st.of_ctrl))
   in 
-  let _ = OC.register_cb st OE.DATAPATH_JOIN (datapath_join_cb switch_data) in
-  OC.register_cb st OE.PACKET_IN  (router_packet_in_cb name switch_data)
+  let _ = OC.register_cb ctrl OE.DATAPATH_JOIN (datapath_join_cb st) in
+    OC.register_cb ctrl OE.PACKET_IN  (router_packet_in_cb name st)
 
 
 (******************************************
  *i Fat tree controller 
  * *)
-let fib_match st dst_ip =
+let fib_match st dpid dst_ip =
   let ip_match ip mask dst_ip = 
     let netmask = Int32.shift_left 0xffffffffl (32 - mask) in 
       (Int32.logand netmask dst_ip) = (Int32.logand netmask ip)
@@ -251,13 +253,37 @@ let fib_match st dst_ip =
   let (m, p) = List.fold_right (
     fun (ip, mask, port) (m, p) -> 
       if ((m <= mask) && (ip_match ip mask dst_ip)) then 
-          (mask, port)
+          (mask, port )
         else
           (m,p)
-  ) st.fib (0, 0) in 
+  ) st.fib (0, []) in 
   if (m = 0) then 
     failwith (sprintf "Invalid IP address %lx" dst_ip ) 
-  else 
+  else
+    (* Find the load on each link and define weights *)
+    let sum = List.fold_right (fun p sum -> 
+      if (Hashtbl.mem st.port_load (OP.Port.Port(p)) ) then
+        sum +. (100.0 -. (Hashtbl.find st.port_load (OP.Port.Port(p)) ) )
+      else sum +. 100.0  ) p 0.0 in
+    let prob = Random.float sum in 
+    let (_, p) = List.fold_right ( 
+      fun port (sum, p) -> 
+        let count = 
+          try 
+            let load =  Hashtbl.find st.port_load 
+                          (OP.Port.Port(port))  in 
+            100.0 -. load
+          with Not_found -> 100.0
+        in 
+        if ((prob >= sum) && (prob <= count +. sum )) then
+          let _ = printf "[switch 0x%Lx] found port %d with prob %f [%f - %f]\n%!" 
+                    dpid port prob sum (sum +. count) in 
+          (sum +. count, OP.Port.Port(port) )
+        else 
+          let _ = printf "[switch 0x%Lx] didn't found port %d with prob %f [%f - %f]\n%!" 
+                    dpid port prob sum (sum +. count) in 
+          (sum +. count, p)
+    ) p (0.0, OP.Port.Port(List.hd p)) in 
     (m, p)
 
 let fat_tree_ip pod swid hid = 
@@ -279,14 +305,11 @@ let fat_tree_packet_in_cb pod swid name switch_data controller dpid evt =
   (* Store src mac address and incoming port *)
   let ix = m.OP.Match.dl_src in
   let _ = Hashtbl.replace switch_data.mac_cache ix in_port in
-
   let _ = 
     if ((m.OP.Match.dl_type = 0x0806) || (m.OP.Match.dl_type = 0x0800)) then
       Hashtbl.replace switch_data.ip_cache m.OP.Match.nw_src m.OP.Match.dl_src
   in
   let ip = fat_tree_ip pod swid 1 in 
-
-
   match (m.OP.Match.dl_type) with
   | (0x88cc) -> return ()
   | 0x0806  -> 
@@ -294,7 +317,7 @@ let fat_tree_packet_in_cb pod swid name switch_data controller dpid evt =
     let _ = Hashtbl.replace switch_data.ip_cache m.OP.Match.nw_src
             m.OP.Match.dl_src in
       if (m.OP.Match.nw_dst = ip) then 
-        let data = get_arp_reply ix m.OP.Match.nw_src ip in 
+        let data = get_arp_reply "\xfe\xff\xff\xff\xff\xff" ix m.OP.Match.nw_src ip in 
         let bs =
           (OP.Packet_out.create ~buffer_id:(-1l)
           ~actions:[ OP.(Flow.Output(OP.Port.All, 2000))]
@@ -304,18 +327,18 @@ let fat_tree_packet_in_cb pod swid name switch_data controller dpid evt =
           return ()
       else return ()
   | _ -> begin
-    let (_, out_port) = fib_match switch_data m.OP.Match.nw_dst in
+    try_lwt
+    let (_, out_port) = fib_match switch_data dpid m.OP.Match.nw_dst in
 
     let flags=OP.Flow_mod.({send_flow_rem=true;emerg=false;overlap=false;}) in
     let actions = 
       if (Hashtbl.mem switch_data.ip_cache m.OP.Match.nw_dst) then
         let ix = Hashtbl.find switch_data.ip_cache m.OP.Match.nw_dst in
-        [
-          OP.(Flow.Set_dl_src("\xfe\xff\xff\xff\xff\xff"));
-          OP.(Flow.Set_dl_dst(ix));
-        OP.(Flow.Output( (OP.Port.Port(out_port)), 2000))]
+        [OP.(Flow.Set_dl_src("\xfe\xff\xff\xff\xff\xff"));
+         OP.(Flow.Set_dl_dst(ix));
+         OP.(Flow.Output(out_port, 2000))]
       else
-        [ OP.(Flow.Output( (OP.Port.Port(out_port)), 2000)) ]
+        [ OP.(Flow.Output(out_port, 2000)) ]
     in 
     lwt _ =
       if (buffer_id = -1l) then
@@ -331,47 +354,100 @@ let fat_tree_packet_in_cb pod swid name switch_data controller dpid evt =
       actions () in
     let h = OP.Header.create OP.Header.FLOW_MOD 0 in
       OC.send_data controller dpid (OP.Flow_mod (h, pkt)) 
+    with Not_found ->
+      return (printf "XXXXXXXX Found the not found error\n%!")
+
   end
 
-let init_fat_tree pod swid name switch_data st =
+let fat_tree_stats_cb st ctrl dpid = function 
+  | OE.Flow_stats_reply(xid, more, stats, dpid) ->
+    let ports = Hashtbl.create 16 in 
+    let _ = List.iter (fun fl ->
+        let (p, count, _) = 
+          if (Hashtbl.mem st.flows fl.OP.Flow.of_match) then
+            Hashtbl.find st.flows fl.OP.Flow.of_match 
+          else 
+            let p = List.fold_right (
+              fun a p -> 
+                match a with 
+                | OP.Flow.Output(p, _)  -> p
+                | _ -> p ) fl.OP.Flow.action OP.Port.No_port in 
+            (p, 0L, 0L)
+        in 
+        let new_diff = Int64.sub fl.OP.Flow.byte_count count in 
+        let _ = Hashtbl.replace st.flows fl.OP.Flow.of_match 
+                  (p, fl.OP.Flow.byte_count, new_diff ) in
+        let count =
+          if (Hashtbl.mem ports p) then Hashtbl.find ports p 
+          else 0L in 
+          Hashtbl.replace ports p (Int64.add count new_diff)
+      ) stats in
+
+    let finished = Hashtbl.fold (fun k _ finished -> 
+      if (List.exists (fun fl -> fl.OP.Flow.of_match = k) stats ) then
+        finished 
+      else 
+        k :: finished 
+    ) st.flows [] in 
+    let _ = List.iter (fun k -> Hashtbl.remove st.flows k) finished in    
+    let _ = Hashtbl.iter 
+              (fun p c ->
+                let load = 
+                  if (Hashtbl.mem ports p) then 
+                    let load = Hashtbl.find ports p in
+                    let load = (Int64.to_float (Int64.div load 131072L )) in
+                    let _ = Hashtbl.replace st.port_load p load in 
+                      load
+                  else
+                    let _ = Hashtbl.replace st.port_load p 0.0 in 0.0
+                in 
+                printf "[switch 0x%Lx] Port %s load %f\n%!" 
+                  dpid (OP.Port.string_of_port p) load 
+    ) st.port_load in
+    return ()
+  | _ -> return (printf "invalid event on fat_tree_stats_cb\n%!")
+
+let init_fat_tree pod swid name st ctrl =
   let _ = 
-    if (not (List.mem st switch_data.of_ctrl)) then
-      switch_data.of_ctrl <- (([st] @ switch_data.of_ctrl))
+    if (not (List.mem ctrl st.of_ctrl)) then
+      st.of_ctrl <- (([ctrl] @ st.of_ctrl))
   in
   (* create the fib *)
   let _ = 
     if (swid < 2) then 
-      switch_data.fib <- 
-        [((fat_tree_ip pod swid 2) , 32, 10);
-        ((fat_tree_ip pod swid 3), 32, 11); 
-        (0x0a000000l, 8, 12)]
+      st.fib <- 
+        [((fat_tree_ip pod swid 2) , 32, [10] );
+        ((fat_tree_ip pod swid 3), 32, [11] ); 
+        (0x0a000000l, 8, [12;13] )]
     else 
-      switch_data.fib <- 
-        [((fat_tree_ip pod 0 0), 24, 10); 
-        ((fat_tree_ip pod 1 0), 24, 11); 
-        (0x0a000000l, 8, 12)]
+      st.fib <- 
+        [((fat_tree_ip pod 0 0), 24, [10] ); 
+        ((fat_tree_ip pod 1 0), 24, [11] ); 
+        (0x0a000000l, 8, [12;13] )]
   in
-  let _ = OC.register_cb st OE.DATAPATH_JOIN (datapath_join_cb switch_data 
-        ~ip:(Some(fat_tree_ip pod swid 1))) in
-  let _ = OC.register_cb st OE.PACKET_IN  (fat_tree_packet_in_cb pod swid name
-  switch_data) in 
+  let _ = OC.register_cb ctrl OE.DATAPATH_JOIN (datapath_join_cb st
+          ~stats:(Some(1.0)) ~ip:(Some(fat_tree_ip pod swid 1))) in
+  let _ = OC.register_cb ctrl OE.PACKET_IN  (fat_tree_packet_in_cb pod swid name st) in 
+  let _ = OC.register_cb ctrl OE.FLOW_STATS_REPLY  (fat_tree_stats_cb st) in 
+  let _ = OC.register_cb ctrl OE.PORT_STATUS_CHANGE (port_status_cb st) in 
     ()
- 
-let init_fat_tree_core pod i j name switch_data st =
+
+let init_fat_tree_core pod i j name st ctrl =
   let _ = 
-    if (not (List.mem st switch_data.of_ctrl)) then
-      switch_data.of_ctrl <- (([st] @ switch_data.of_ctrl))
+    if (not (List.mem ctrl st.of_ctrl)) then
+      st.of_ctrl <- (([ctrl] @ st.of_ctrl))
   in
   (* create the fib *)
   let _ = 
-      switch_data.fib <- 
-        [((fat_tree_ip 0 0 0) , 16, 10);
-        ((fat_tree_ip 1 0 0), 16, 11); 
-        ((fat_tree_ip 2 0 0), 16, 12); 
-        ((fat_tree_ip 3 0 0), 16, 13); 
+      st.fib <- 
+        [((fat_tree_ip 0 0 0) , 16, [10] );
+        ((fat_tree_ip 1 0 0), 16, [11] ); 
+        ((fat_tree_ip 2 0 0), 16, [12] ); 
+        ((fat_tree_ip 3 0 0), 16, [13] ); 
         (* (0x0a000000l, 8, 13) *) ]
   in
-  let _ = OC.register_cb st OE.DATAPATH_JOIN (datapath_join_cb switch_data 
-        ~ip:(Some(fat_tree_ip 4 i j))) in
-  let _ = OC.register_cb st OE.PACKET_IN  (fat_tree_packet_in_cb 4 i name switch_data) in 
+  let _ = OC.register_cb ctrl OE.DATAPATH_JOIN (datapath_join_cb st
+            ~stats:(Some(1.0)) ~ip:(Some(fat_tree_ip 4 i j))) in
+  let _ = OC.register_cb ctrl OE.PACKET_IN  (fat_tree_packet_in_cb 4 i name st) in 
+  let _ = OC.register_cb ctrl OE.FLOW_STATS_REPLY  (fat_tree_stats_cb st) in
     ()
