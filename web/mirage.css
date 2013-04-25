@@ -4,9 +4,36 @@
 }
 
 .node text {
-    pointer-events: none;
-      font: 12px sans-serif;
-    }
+  pointer-events: none;
+  font: 12px sans-serif;
+  stroke: #ff0000;
+}
+
+.y_axis {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 40px;
+}
+
+.chart {
+        position: relative;
+        left: 40px;
+}
+.rickshaw_graph .y_ticks {
+        left: 0;
+}
+
+body {
+  padding-top: 20px;
+  padding-bottom: 40px;
+}
+
+/* Main marketing message and sign up button */
+.jumbotron {
+  margin: 60px 0;
+  text-align: center;
+}
 
 .link {
   stroke: #999;

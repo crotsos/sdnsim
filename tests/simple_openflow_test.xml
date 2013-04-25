@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<topology module="Simple_openflow_test" backend="ns3-direct" duration="30">
+<topology module="Simple_openflow_test" backend="ns3-direct" duration="30" logger="127.0.0.1">
   <modules>
     <library>uri</library>
     <library>lwt</library>
@@ -19,7 +19,7 @@
   </node>
   <node name="controller" main="controller_inner"/> 
   <node name="switch" main="switch_inner"/> 
-  <link src="node2" dst="switch" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node1" dst="switch" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="node2" dst="switch" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node1" dst="switch" delay="10" rate="10" queue_size="100" pcap="true"/>
   <link src="switch" dst="controller" delay="10" rate="100" queue_size="100" pcap="true"/>
 </topology>

@@ -123,7 +123,7 @@ let packet_in_cb ?(handle_arp=true) name switch_data controller dpid evt =
   in
 
   (* Parse Ethernet header *)
-  let m = OP.Match.raw_packet_to_match in_port data in 
+  let m = OP.Match.raw_packet_to_match in_port data in
 
   (* Store src mac address and incoming port *)
   match (handle_arp, m.OP.Match.dl_type) with
@@ -138,15 +138,17 @@ let packet_in_cb ?(handle_arp=true) name switch_data controller dpid evt =
     let ix = m.OP.Match.dl_dst in
       if ((ix = "\xff\xff\xff\xff\xff\xff") ||
          (not (Hashtbl.mem switch_data.mac_cache ix)) ) then (
+(*        let _ = pp "XXXXX got a packet I don't know the output port\n%!" in *)
         let bs =
           (OP.Packet_out.create ~buffer_id
-          ~actions:[ OP.(Flow.Output(m.OP.Match.in_port, 2000))]
+          ~actions:[ OP.(Flow.Output(OP.Port.All, 2000))]
           ~data ~in_port () ) in
           let h = OP.Header.create OP.Header.PACKET_OUT 0 in
             OC.send_data controller dpid (OP.Packet_out (h, bs))
       ) else (
+(*        let _ = pp "XXXXX got a packet I know the output port\n%!" in *)
         let out_port = (Hashtbl.find switch_data.mac_cache ix) in
-        let flags = OP.Flow_mod.({send_flow_rem=true; emerg=false; overlap=false;}) in 
+        let flags = OP.Flow_mod.({send_flow_rem=true; emerg=false; overlap=false;}) in
         lwt _ =
           if (buffer_id = -1l) then
             (* Need to send also the packet in cache the packet is not cached *)
@@ -401,8 +403,9 @@ let fat_tree_stats_cb st ctrl dpid = function
                   else
                     let _ = Hashtbl.replace st.port_load p 0.0 in 0.0
                 in 
-                printf "[switch 0x%Lx] Port %s load %f\n%!" 
-                  dpid (OP.Port.string_of_port p) load 
+        (*        printf "[switch 0x%Lx] Port %s load %f\n%!" 
+                  dpid (OP.Port.string_of_port p) load *)
+        ()
     ) st.port_load in
     return ()
   | _ -> return (printf "invalid event on fat_tree_stats_cb\n%!")

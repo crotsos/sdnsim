@@ -62,8 +62,8 @@ let host_inner ~pod ~swid ~hid () =
         match hid with
         | 2 ->
 (*            Datagram.UDPv4.recv mgr (None, port) echo_udp *)
-(*           Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo ))   *)
-          Client.pttcp_server mgr port 5 
+           Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo ))   
+(*          Client.pttcp_server mgr port 5 *)
         | 3 ->
           lwt _ = Time.sleep 1.0 in 
           let dst_pod = (pod + 1) mod 4 in 
@@ -75,10 +75,10 @@ let host_inner ~pod ~swid ~hid () =
             ipv4_addr_of_tuple (10l,(Int32.of_int dst_pod),(Int32.of_int
             dst_swid),2l) in  
 (*            echo_client_udp mgr (dst_ip,port) *)
-(*             Net.Channel.connect mgr  
-               (`TCPv4 (None, (loc_dst_ip, port), Client.echo_client ))  *)
-(*            Client.pttcp_client mgr rem_dst_ip port 5 10000000l<&> *)
-            Client.pttcp_client mgr loc_dst_ip port 5 1000000l
+             Net.Channel.connect mgr  
+               (`TCPv4 (None, (loc_dst_ip, port), Client.echo_client ))  
+(*            Client.pttcp_client mgr rem_dst_ip port 5 10000000l<&> 
+            Client.pttcp_client mgr loc_dst_ip port 5 1000000l *)
 
         | _ -> return (printf "Invalid node_id %d\n%!" hid)
         )

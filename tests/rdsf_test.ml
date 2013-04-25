@@ -53,7 +53,7 @@ let ip gid nid =
 let host_inner gid hid () =
   try_lwt 
     Manager.create (fun mgr interface id ->
-      lwt _ = Time.sleep 0.5 in 
+      lwt _ = Time.sleep 2.0 in 
       lwt _ = Manager.configure interface (`IPv4 (ip gid hid)) in
       let _ = log_dev id (sprintf "10.0.%d.%d" gid hid) in 
         match hid with
@@ -70,7 +70,7 @@ let host_inner gid hid () =
 (*            echo_client_udp mgr (dst_ip,port) *)
 (*            Net.Channel.connect mgr 
                   (`TCPv4 (None, (loc_dst_ip, port), Client.echo_client )) *)
-            Client.pttcp_client mgr rem_dst_ip port 5 10000000l<&> 
+(*            Client.pttcp_client mgr rem_dst_ip port 5 10000000l<&> *)
             Client.pttcp_client mgr loc_dst_ip port 5 10000000l
         | _ -> return (printf "Invalid node_id %d\n%!" hid)
         )
@@ -171,7 +171,7 @@ let switch_inner switch_id () =
   let name = sprintf "switch%d" switch_id in 
   let _ = ignore_result (OF.local_listen flv sw_ch1) in 
   let _ = ignore_result 
-          (OC.local_connect ctrl ctrl_ch1 (Controller.init name switch_data)) in
+          (OC.local_connect ctrl ctrl_ch1 (Controller.init ~handle_arp:true name switch_data)) in
 
   (* forward arp traffic to local controller *)
   let dpid = Int64.add 0x20L (Int64.of_int switch_id) in

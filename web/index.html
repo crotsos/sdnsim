@@ -6,23 +6,25 @@
   <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
   <script src="http://d3js.org/d3.v2.js"></script>
   <script src="js/bootstrap.min.js"></script>
+  <link href="css/bootstrap.min.new.css" rel="stylesheet" media="screen">
+  <script src="http://code.shutterstock.com/rickshaw/rickshaw.min.js"></script>
   <link type="text/css" rel="stylesheet" href="mirage.css"/>
-  <link href="css/bootstrap.min.css" rel="stylesheet" media="screen">
 </head>
 
   <body>
-    <div class="container text-center">
-      <div class="row"><h1>SDNSIM simulation visualisation</h1></div>
-      <div class="row">time:&nbsp;<span id="timer"/>&nbsp; sec</div>
-      </div>
-      <div class="row">
-        <div id="chart" style="width:100%"></div>
-        <script  type="text/javascript" src="mirage-display.js"></script>
-        <div style="">
-          <table class="table" id="flow_table" style="width:100%"/>
-      <!--- <tr><td>hello</td></tr> -->
-        </div>
-      </div>
+    <div class="container-narrow text-center">
+      <div class="row-fluid"><h1>SDNSIM simulation visualisation</h1></div>
+      <div class="row-fluid">time:&nbsp;<span id="timer">0</span>&nbsp; sec</div>
+    </div>
+    <div class="row-fluid" style="overflow: scroll;">
+      <div id="graph"> </div>
+    </div>
+    <div class="row-fluid">
+      <div id="chart" style="width:100%"></div>
+      <script  type="text/javascript" src="mirage-display.js"></script>
+    </div>
+    <div class="row">
+        <table class="table" id="flow_table"/>
     </div>
   </body>
 

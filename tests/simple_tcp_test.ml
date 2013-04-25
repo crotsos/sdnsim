@@ -49,19 +49,20 @@ let host_inner host_id () =
           lwt _ = Manager.configure interface (`IPv4 (ip host_id)) in
           Printf.printf "%f: trying to connect server\n%!" (Clock.time ());
 (*             Datagram.UDPv4.recv mgr (None, port) echo_udp *)
-          lwt _ = Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo ))
-                in 
-(*          lwt _ = Client.pttcp_server mgr port 30 in *)
+(*          lwt _ = Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo ))
+                in *)
+          lwt _ = Client.pttcp_udp_server mgr port 1 in 
             return (printf "server returned\n%!")
        | 1 -> 
           let dst_ip = Nettypes.ipv4_addr_of_tuple (10l,0l,1l,2l) in  
           lwt _ = Manager.configure interface (`IPv4 (ip host_id)) in
 (*          echo_client_udp mgr (dst_ip,port) *)
           Printf.printf "%f: connecting client ip\n%!" (Clock.time ());
-          lwt _ = 
+(*          lwt _ = 
             Net.Channel.connect mgr 
-            (`TCPv4 (None, (dst_ip, port), Client.echo_client)) in
-(*          lwt _ = Client.pttcp_client mgr dst_ip port 30  100000l in *)
+            (`TCPv4 (None, (dst_ip, port), Client.echo_client)) in*)
+          (* lwt _ = Client.pttcp_client mgr dst_ip port 30  100000000l in *)
+          lwt _ = Client.pttcp_udp_client mgr dst_ip port 1 100000000l in 
             return (printf "client returned\n%!")
         | _ -> return (printf "Invalid node_id %d\n%!" host_id)
         )

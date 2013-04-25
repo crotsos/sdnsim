@@ -16,11 +16,11 @@ let rec echo dst chan =
     lwt _ =
       while_lwt true do
         lwt buf = Channel.read_some chan in
-(*
-        let _ = Printf.printf "%f: read %d\n%!" 
+
+(*        let _ = Printf.printf "%f: read %d\n%!" 
          (Clock.time ())
-         (Cstruct.len buf) in 
-*)
+         (Cstruct.len buf) in *)
+
           return () 
       done
     in
@@ -69,4 +69,11 @@ let pttcp_server ?(debug=false) mgr port count =
 let pttcp_client ?(debug=false) mgr ip port conns size =
   let model = Cts_ctl(conns, size, ip, conns, port) in
   (generate_traffic mgr model debug )
+
+let pttcp_udp_server ?(debug=false) mgr port count =
+  Pttcp.Pttcp_udp.(generate_traffic mgr (Srv(count, port)) (Constant 0.1) 1400 debug)
+          
+let pttcp_udp_client ?(debug=false) mgr ip port conns size =
+  Pttcp.Pttcp_udp.(let model = Cts_ctl(conns, size, ip, conns, port) in
+  (generate_traffic mgr model  (Constant 0.0001) 1460 debug ))
  

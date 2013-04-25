@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<topology module="Simple_tcp_test" backend="ns3-direct" logger="23.20.194.252" duration="30">
+<topology module="Simple_tcp_test" backend="ns3-direct" logger="127.0.0.1" duration="30">
   <modules>
     <library>lwt</library>
     <library>lwt.syntax</library>

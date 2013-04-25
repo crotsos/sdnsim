@@ -59,20 +59,20 @@
     <param name="pod">3</param> <param name="swid">0</param>
     <param name="hid">2</param> </node>
   
-  <link src="core_2_2" dst="switch_3_3" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_2_1" dst="switch_3_3" delay="10" rate="100" queue_size="100" pcap="false"/> 
-  <link src="core_1_2" dst="switch_3_2" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_1_1" dst="switch_3_2" delay="10" rate="100" queue_size="100" pcap="false"/>
+  <link src="core_2_2" dst="switch_3_3" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_2_1" dst="switch_3_3" delay="10" rate="10" queue_size="100" pcap="false"/> 
+  <link src="core_1_2" dst="switch_3_2" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_1_1" dst="switch_3_2" delay="10" rate="10" queue_size="100" pcap="false"/>
   
-  <link src="switch_3_3" dst="switch_3_1" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_3_2" dst="switch_3_1" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_3_3" dst="switch_3_0" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_3_2" dst="switch_3_0" delay="10" rate="100" queue_size="100" pcap="false"/>
+  <link src="switch_3_3" dst="switch_3_1" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_3_2" dst="switch_3_1" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_3_3" dst="switch_3_0" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_3_2" dst="switch_3_0" delay="10" rate="10" queue_size="100" pcap="false"/>
   
-  <link src="node_3_1_3" dst="switch_3_1" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_3_1_2" dst="switch_3_1" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_3_0_3" dst="switch_3_0" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_3_0_2" dst="switch_3_0" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="node_3_1_3" dst="switch_3_1" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_3_1_2" dst="switch_3_1" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_3_0_3" dst="switch_3_0" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_3_0_2" dst="switch_3_0" delay="10" rate="10" queue_size="100" pcap="true"/>
 
   <!-- pod 2 -->
   <node name="switch_2_0" main="switch_inner">
@@ -101,20 +101,20 @@
     <param name="pod">2</param> <param name="swid">1</param>
     <param name="hid">3</param> </node>
   
-  <link src="core_2_2" dst="switch_2_3" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_2_1" dst="switch_2_3" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_1_2" dst="switch_2_2" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_1_1" dst="switch_2_2" delay="10" rate="100" queue_size="100" pcap="false"/>
+  <link src="core_2_2" dst="switch_2_3" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_2_1" dst="switch_2_3" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_1_2" dst="switch_2_2" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_1_1" dst="switch_2_2" delay="10" rate="10" queue_size="100" pcap="false"/>
 
-  <link src="switch_2_3" dst="switch_2_1" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_2_2" dst="switch_2_1" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_2_3" dst="switch_2_0" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_2_2" dst="switch_2_0" delay="10" rate="100" queue_size="100" pcap="false"/>
+  <link src="switch_2_3" dst="switch_2_1" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_2_2" dst="switch_2_1" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_2_3" dst="switch_2_0" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_2_2" dst="switch_2_0" delay="10" rate="10" queue_size="100" pcap="false"/>
   
-  <link src="node_2_1_3" dst="switch_2_1" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_2_1_2" dst="switch_2_1" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_2_0_3" dst="switch_2_0" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_2_0_2" dst="switch_2_0" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="node_2_1_3" dst="switch_2_1" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_2_1_2" dst="switch_2_1" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_2_0_3" dst="switch_2_0" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_2_0_2" dst="switch_2_0" delay="10" rate="10" queue_size="100" pcap="true"/>
 
   <!-- pod 1 -->
   <node name="switch_1_0" main="switch_inner">
@@ -143,20 +143,20 @@
     <param name="pod">1</param> <param name="swid">1</param>
     <param name="hid">3</param> </node>
   
-  <link src="core_2_2" dst="switch_1_3" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_2_1" dst="switch_1_3" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_1_2" dst="switch_1_2" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_1_1" dst="switch_1_2" delay="10" rate="100" queue_size="100" pcap="false"/>
+  <link src="core_2_2" dst="switch_1_3" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_2_1" dst="switch_1_3" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_1_2" dst="switch_1_2" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_1_1" dst="switch_1_2" delay="10" rate="10" queue_size="100" pcap="false"/>
   
-  <link src="switch_1_3" dst="switch_1_1" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_1_2" dst="switch_1_1" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_1_3" dst="switch_1_0" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_1_2" dst="switch_1_0" delay="10" rate="100" queue_size="100" pcap="false"/>
+  <link src="switch_1_3" dst="switch_1_1" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_1_2" dst="switch_1_1" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_1_3" dst="switch_1_0" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_1_2" dst="switch_1_0" delay="10" rate="10" queue_size="100" pcap="false"/>
   
-  <link src="node_1_1_3" dst="switch_1_1" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_1_1_2" dst="switch_1_1" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_1_0_3" dst="switch_1_0" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_1_0_2" dst="switch_1_0" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="node_1_1_3" dst="switch_1_1" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_1_1_2" dst="switch_1_1" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_1_0_3" dst="switch_1_0" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_1_0_2" dst="switch_1_0" delay="10" rate="10" queue_size="100" pcap="true"/>
 
  <!-- pod 0 -->
   <node name="switch_0_0" main="switch_inner">
@@ -185,20 +185,20 @@
     <param name="pod">0</param> <param name="swid">1</param>
     <param name="hid">3</param> </node>
   
-  <link src="core_2_2" dst="switch_0_3" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_2_1" dst="switch_0_3" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_1_2" dst="switch_0_2" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="core_1_1" dst="switch_0_2" delay="10" rate="100" queue_size="100" pcap="false"/>
+  <link src="core_2_2" dst="switch_0_3" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_2_1" dst="switch_0_3" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_1_2" dst="switch_0_2" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="core_1_1" dst="switch_0_2" delay="10" rate="10" queue_size="100" pcap="false"/>
   
-  <link src="switch_0_3" dst="switch_0_1" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_0_2" dst="switch_0_1" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_0_3" dst="switch_0_0" delay="10" rate="100" queue_size="100" pcap="false"/>
-  <link src="switch_0_2" dst="switch_0_0" delay="10" rate="100" queue_size="100" pcap="false"/>
+  <link src="switch_0_3" dst="switch_0_1" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_0_2" dst="switch_0_1" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_0_3" dst="switch_0_0" delay="10" rate="10" queue_size="100" pcap="false"/>
+  <link src="switch_0_2" dst="switch_0_0" delay="10" rate="10" queue_size="100" pcap="false"/>
   
-  <link src="node_0_0_3" dst="switch_0_0" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_0_0_2" dst="switch_0_0" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_0_1_3" dst="switch_0_1" delay="10" rate="100" queue_size="100" pcap="true"/>
-  <link src="node_0_1_2" dst="switch_0_1" delay="10" rate="100" queue_size="100" pcap="true"/>
+  <link src="node_0_0_3" dst="switch_0_0" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_0_0_2" dst="switch_0_0" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_0_1_3" dst="switch_0_1" delay="10" rate="10" queue_size="100" pcap="true"/>
+  <link src="node_0_1_2" dst="switch_0_1" delay="10" rate="10" queue_size="100" pcap="true"/>
 
 
 </topology>

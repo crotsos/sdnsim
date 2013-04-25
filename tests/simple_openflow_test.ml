@@ -40,7 +40,7 @@ let ip node_id =
       
 (* Code to run on the end node *)
 let host_inner host_id () =
-  lwt _ = OS.Time.sleep 2.0 in 
+  lwt _ = OS.Time.sleep 1.0 in 
   let config_host host_id =
     try_lwt 
       Manager.create (fun mgr interface id ->
@@ -50,7 +50,8 @@ let host_inner host_id () =
           let _ = printf "[host%d] server setting up ip 10.0.1.%d\n%!" 
                     host_id host_id  in  
 (*             Datagram.UDPv4.recv mgr (None, port) echo_udp *)
-          Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo ))
+(*          Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo )) *)
+          Client.pttcp_udp_server mgr port 1
         | 2 -> 
           let dst_ip = Nettypes.ipv4_addr_of_tuple (10l,0l,1l,1l) in  
           let _ = printf "[host%d] client setting up ip 10.0.1.%d\n%!" 
@@ -59,7 +60,9 @@ let host_inner host_id () =
           let _ = Printf.printf "[host%d] %f: trying to connect client \n%!"
                     host_id (Clock.time ()) in 
 (*             echo_client_udp mgr (dst_ip,port) *)
-          Net.Channel.connect mgr (`TCPv4 (None, (dst_ip, port), Client.echo_client ))
+(* Net.Channel.connect mgr (`TCPv4 (None, (dst_ip, port), Client.echo_client ))
+      * *)
+          Client.pttcp_udp_client ~debug:true mgr dst_ip port 1 100000l
         | _ -> return (printf "Invalid node_id %d\n%!" host_id)
         )
     with e ->
