@@ -142,7 +142,7 @@ lwt _ =
     let _ = build_ocamlbuild_files sc in 
     lwt _ = generate_scenario sc in
     lwt _ = run_scenario sc in
-    lwt _ = clean_scenario sc in
+    (* lwt _ = clean_scenario sc in *)
       return ()
   with ex ->
       return (eprintf "error: %s\n%s\n%!" (Printexc.to_string ex)
