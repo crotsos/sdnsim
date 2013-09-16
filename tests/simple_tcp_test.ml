@@ -28,10 +28,10 @@ let pp = Printf.printf
 
 let ip node_id = 
   Nettypes.(
-    (ipv4_addr_of_tuple (10l,0l,1l,(Int32.of_int node_id)),
-    ipv4_addr_of_tuple (255l,255l,255l,0l),
-    [ ipv4_addr_of_tuple (10l,0l,1l,1l) ]
-    )) 
+    (Ipaddr.V4.make  10l 0l 1l (Int32.of_int node_id)),
+    (Ipaddr.V4.make  255l 255l 255l 0l),
+    [ (Ipaddr.V4.make 10l 0l 1l 1l) ]
+    ) 
       
 let print_time () = 
   while_lwt true do
@@ -41,6 +41,12 @@ let print_time () =
 
 (* Code to run on the end node *)
 let host_inner host_id () =
+
+(* lwt _ = while_lwt true do
+  lwt _ = OS.Time.sleep 1.0 in return (Printf.printf "hello world!\n%!")
+  done 
+in *)
+let _ = Lwt.ignore_result (print_time ()) in   
  let config_host host_id =
     try_lwt 
       Manager.create (fun mgr interface id ->
@@ -54,7 +60,7 @@ let host_inner host_id () =
           lwt _ = Client.pttcp_udp_server mgr port 1 in 
             return (printf "server returned\n%!")
        | 1 -> 
-          let dst_ip = Nettypes.ipv4_addr_of_tuple (10l,0l,1l,2l) in  
+          let dst_ip = Ipaddr.V4.make 10l 0l 1l 2l in  
           lwt _ = Manager.configure interface (`IPv4 (ip host_id)) in
 (*          echo_client_udp mgr (dst_ip,port) *)
           Printf.printf "%f: connecting client ip\n%!" (Clock.time ());

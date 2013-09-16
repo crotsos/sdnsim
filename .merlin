@@ -1,0 +1,8 @@
+S src/.
+B _build/src
+PKG lwt
+PKG mirage
+PKG mirage-xen
+PKG xapi-client
+PKG cstruct
+PKG pttcp

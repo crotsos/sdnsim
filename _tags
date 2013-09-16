@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 08de11e0814cfe82716154eb04b8e88d)
+# DO NOT EDIT (digest: 9258b82749aa99deb4110ae1452dea34)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -16,15 +16,26 @@
 # Executable sdnsim
 "src/sdnsim.native": pkg_lwt
 "src/sdnsim.native": pkg_lwt.syntax
-"src/sdnsim.native": pkg_xml-light
+"src/sdnsim.native": pkg_lwt.unix
+"src/sdnsim.native": pkg_xml-light2
 "src/sdnsim.native": pkg_threads
 "src/sdnsim.native": pkg_optcomp
 "src/sdnsim.native": pkg_re.str
+"src/sdnsim.native": pkg_xen-api-client
+"src/sdnsim.native": pkg_stdext
+"src/sdnsim.native": pkg_http-svr
+"src/sdnsim.native": pkg_xen-api-client.lwt
 <src/*.ml{,i}>: pkg_lwt
 <src/*.ml{,i}>: pkg_lwt.syntax
-<src/*.ml{,i}>: pkg_xml-light
+<src/*.ml{,i}>: pkg_lwt.unix
+<src/*.ml{,i}>: pkg_xml-light2
 <src/*.ml{,i}>: pkg_threads
 <src/*.ml{,i}>: pkg_optcomp
 <src/*.ml{,i}>: pkg_re.str
+<src/*.ml{,i}>: pkg_xen-api-client
+<src/*.ml{,i}>: pkg_stdext
+<src/*.ml{,i}>: pkg_http-svr
+<src/*.ml{,i}>: pkg_xen-api-client.lwt
 "src/sdnsim.native": custom
 # OASIS_STOP
+<src/*.ml{,i}>: syntax_camlp4o

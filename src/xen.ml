@@ -1,118 +1,104 @@
-#let BUILD_XEN = false
+#let BUILD_XEN = true
 
 #if BUILD_XEN
 open Lwt
 open Lwt_unix
 open Printf
-open Client
-open Xmlrpc_client
-open Printf
 open Stringext
+open Topo
 
-let http = xmlrpc ~version:"1.1" "/"
-let host = ref "localhost" 
-let vm_template = "Other install media"
+
+open Xen_api
+open Xen_api_lwt_unix
 
 (* informations required to store for each host *)
 type host_type = {
-  name: string;
+  name_label: string;
   vm_uuid: string;
-  vm_ref: API.ref_VM; 
+  mutable vif_uuid : string list;
   mutable vif_count: int;
 }
 let hosts = ref []
 
 (* (network_ref, net_uuid, (vm_uuid, vif_uuid, vif_ref) list) *)
 type link_type = {
-  net_ref: API.ref_network; 
+  hosts : string * string;
+  net_ref: string; 
 }
 let links = ref []
 let net_count = ref 0
 
-let rpc_remote xml = 
-  XML_protocol.rpc ~transport:(SSL(SSL.make(), !host, 443)) 
-    ~http xml
+let rpc = make  "file:///var/lib/xcp/xapi"
 
-let rpc_unix_domain xml = 
-  XML_protocol.rpc ~transport:(Unix "/var/lib/xcp/xapi") ~http xml
-
-let rpc = ref rpc_unix_domain
-
-let init_session uname pwd =
-    Client.Session.login_with_password ~rpc:!rpc 
-      ~uname ~pwd ~version:Xapi_globs.api_version_string
+let init_session () =
+    Session.login_with_password rpc Xen_pass.user Xen_pass.pass "1.0" 
       
-let find_template session_id vm = 
-  let vms = Client.VM.get_all !rpc session_id in
-  match List.filter 
-          (fun self ->
-             ((Client.VM.get_name_label !rpc session_id self) = vm)
-             && (Client.VM.get_is_a_template !rpc session_id self)
-          ) vms with
-    | [] -> failwith "Unable_to_find_suitable_vm_template"
-    | x :: _ ->
-        Printf.printf "Choosing template with name: %s\n" (Client.VM.get_name_label !rpc session_id x); 
-        x 
-
-
-let cli_cmd args = 
-  Printf.printf "%s\n" (String.concat " " ("$ "::Xapi_globs.xe_path :: args));
-  try
-    let output = String.rtrim (fst(Forkhelpers.execute_command_get_output 
-                                     "/usr/bin/xe" args)) in
-    Printf.printf "'%s'\n%!" output;
-    output
-  with 
-  | Forkhelpers.Spawn_internal_error(log, output, Unix.WEXITED n) ->
-      Printf.printf "a: %s\n%!!" log;
-      failwith "CLI failed"
-  | Forkhelpers.Spawn_internal_error(log, output, _) ->
-      Printf.printf "b: %s\n%!!" log;
-      failwith "CLI failed"
-  | e -> 
-      Printf.printf "c: %s\n%!!" (Printexc.to_string e);
-      failwith "CLI failed"
-
-let vm_install session_id template name = 
-  let uuid_vm = cli_cmd [ "vm-install"; "template-uuid=" ^ template; 
-                             "new-name-label=" ^ name ] in
-  let vm_ref = Client.VM.get_by_uuid !rpc session_id uuid_vm in
-  let _ = Client.VM.set_PV_kernel!rpc session_id vm_ref
-            (sprintf "/boot/guests/%s" name) in
-  let _ = Client.VM.set_memory_static_min !rpc session_id vm_ref 32000000L in 
-  let _ = Client.VM.set_memory_dynamic_min !rpc session_id vm_ref 32000000L in 
-  let _ = Client.VM.set_memory_dynamic_max !rpc session_id vm_ref 32000000L in 
-  let _ = Client.VM.set_memory_static_max !rpc session_id vm_ref 32000000L in
-  let h = {name; vm_uuid=uuid_vm; vm_ref=vm_ref;
-           vif_count=0;} in 
-  let _ = hosts := !hosts @ [h] in 
-    (uuid_vm, vm_ref)
+let vm_install session_id name_label =
+  try_lwt 
+    let memory = 32000000L in
+    let recommendations = "" (* "<restrictions><restriction
+    field=\"memory-static-max\" max=\"137438953472\" /><restriction
+    field=\"vcpus-max\" max=\"16\"/><restriction property=\"number-of-vbds\"
+    max=\"7\" /><restriction property=\"number-of-vifs\" max=\"7\"
+    /></restrictions>" *) in 
+    lwt vm_uuid = VM.create ~rpc ~session_id ~name_label
+    ~name_description:("sdnsim host")
+    ~user_version:(1L) ~is_a_template:(false) ~affinity:("") ~memory_target:(0L)
+        ~memory_static_max:memory ~memory_dynamic_max:memory
+        ~memory_dynamic_min:memory ~memory_static_min:memory  
+        ~vCPUs_params:([]) ~vCPUs_max:(1L) ~vCPUs_at_startup:(1L)
+        ~actions_after_shutdown:(`destroy) ~actions_after_reboot:(`restart) 
+        ~actions_after_crash:(`restart) ~pV_bootloader:("")
+        ~pV_kernel:(sprintf "/boot/guest/%s.xen" name_label) 
+        ~pV_ramdisk:"" ~pV_args:"" ~pV_bootloader_args:"" ~pV_legacy_args:"" 
+        ~hVM_boot_policy:"" ~hVM_boot_params:([])
+        ~hVM_shadow_multiplier:(1.0) 
+        ~platform:([("nx", "false");("acpi","true");("apic","true");
+        ("pae","true"); ("viridian", "true")]) ~pCI_bus:"" 
+        ~other_config:([]) ~recommendations ~xenstore_data:([]) ~ha_always_run:false 
+        ~ha_restart_priority:"" ~tags:([]) ~blocked_operations:([])
+        ~protection_policy:"" ~is_snapshot_from_vmpp:false 
+        ~appliance:"" ~start_delay:0L ~shutdown_delay:0L ~order:0L
+        ~suspend_SR:"" ~version:(0L) in 
+    let h = {name_label; vm_uuid; vif_uuid=[]; vif_count=0;} in 
+    let _ = hosts := !hosts @ [h] in
+    return vm_uuid
+  with exn -> 
+    failwith (sprintf "ERROR: vm_install:%s\n%!" (Printexc.to_string exn))
 
 let build_vm module_name host = 
-  lwt _ = Lwt_unix.system "ocamlbuild -clean" in 
-  lwt _ = Lwt_unix.system 
-            (sprintf "mir-build xen/topo_%s.xen" module_name) in 
-  lwt _ = Lwt_unix.system 
-            (sprintf "mv ./_build/xen/topo_%s.xen /boot/guest/%s.xen"
-              module_name host) in  
+  lwt _ = Lwt_unix.system "ocamlbuild -clean" in
+  let path = "/home/cr409/.opam/4.00.1+mirage-xen/" in 
+
+  (* TODO make he bin patgh dynamic *)
+  let _ = Util.command "PATH=%s/bin/:$PATH %s/bin/ocamlbuild topo_%s.nobj.o"
+      path path module_name in
+  let obj = sprintf "_build/topo_%s.nobj.o" module_name in 
+  if Sys.file_exists obj then begin
+    let path = Util.read_command "%s/bin/ocamlfind printconf path" path in
+    let lib = Util.strip path ^ "/mirage-xen" in
+    Util.command "ld -d -nostdlib -m elf_x86_64 -T %s/mirage-x86_64.lds %s/x86_64.o %s %s/libocaml.a %s/libxen.a \
+             %s/libxencaml.a %s/libdiet.a %s/libm.a %s/longjmp.o -o _build/topo_%s.xen"  
+            lib lib obj lib lib lib lib lib lib module_name;
+    lwt _ = Lwt_unix.system 
+        (sprintf "mv _build/topo_%s.xen /boot/guest/%s.xen"
+           module_name host) in  
     return ()
+  end else
+    Util.error "xen object file %s not found, cannot continue" obj
 
-let lwt_open_out file = 
-  openfile file [O_WRONLY; O_CREAT; O_TRUNC; ] 0o666 
-
+let lwt_open_out file = openfile file [O_WRONLY; O_CREAT; O_TRUNC; ] 0o666 
 let lwt_output_string fd str = 
   lwt _ = write fd str 0 (String.length str) in 
     return ()
+let lwt_close_out fd = close fd
 
-let lwt_close_out fd = 
-  close fd
-
-let generate_vms ses uuid_tmpl module_name nodes =
+let generate_vms ses module_name nodes =
   lwt _ = 
     Lwt_list.iter_s 
       ( fun (host, main, params) ->  
           lwt out = lwt_open_out (sprintf "topo_%s.ml" module_name) in
-          lwt _ = lwt_output_string out "let run () = " in  
+          lwt _ = lwt_output_string out "let () = OS.Main.run ( " in  
           let str_param = 
             List.fold_right (
               fun (n, v) r -> 
@@ -120,15 +106,11 @@ let generate_vms ses uuid_tmpl module_name nodes =
                   | None -> sprintf "%s %s" r v
                   | Some(n) -> sprintf "%s ~%s:%s" r n v
             ) params "" in 
-          lwt _ = lwt_output_string out (sprintf "%s.%s %s ()\n" 
+          lwt _ = lwt_output_string out (sprintf "%s.%s %s ())\n" 
                   module_name main str_param) in
           lwt _ = lwt_close_out out in 
-          lwt out = lwt_open_out (sprintf "topo_%s.mir" module_name) in
-          lwt _ = lwt_output_string out (sprintf "Topo_%s.run \n"
-                                           module_name) in  
-          lwt _ = lwt_close_out out in
           lwt _ = build_vm module_name host in 
-          let _ = vm_install ses uuid_tmpl host in
+          lwt _ = vm_install ses host in
             return ()
      ) (Hashtbl.fold (fun h (m, p) r -> r @ [(h,m,p)] ) nodes []) in
   return ()
@@ -136,11 +118,15 @@ let generate_vms ses uuid_tmpl module_name nodes =
 let vif_install ses h net_ref = 
   let device = h.vif_count in 
   let _ = h.vif_count <- h.vif_count + 1 in
-    Client.VIF.create ~rpc:!rpc ~session_id:ses 
-      ~vM:h.vm_ref ~network:net_ref ~mTU:1500L 
+  lwt vif_uuid = VIF.create ~rpc ~session_id:ses 
+      ~vM:h.vm_uuid ~network:net_ref ~mTU:1500L 
       ~mAC:"" ~device:(string_of_int device) 
       ~other_config:["promiscuous", "on"; "mtu", "1500"] 
       ~qos_algorithm_type:"" ~qos_algorithm_params:[]
+      ~locking_mode:(`network_default) ~ipv4_allowed:[]
+        ~ipv6_allowed:[] in
+  let _ = h.vif_uuid <- vif_uuid :: h.vif_uuid in 
+    return ()
  
 
 let generate_links ses link_list = 
@@ -149,59 +135,70 @@ let generate_links ses link_list =
       (
         fun (node_src, node_dst, delay, rate, _) ->
           try 
-            let dst_h = List.find (fun a -> (a.name = node_dst)) !hosts in
-            let src_h = List.find (fun a -> (a.name = node_src)) !hosts in 
+            let dst_h = List.find (fun a -> (a.name_label = node_dst)) !hosts in
+            let src_h = List.find (fun a -> (a.name_label = node_src)) !hosts in 
             (* generate target network *)
             let net_id = !net_count in 
             let _ = net_count := !net_count + 1 in 
-            let net_ref = Client.Network.create !rpc ses 
-                            (sprintf "mir%d" net_id)
-                            (sprintf "link between %s & %s" node_src node_dst)
-                            1500L [] [] in
-            let l = {net_ref;} in
-            let _ = links := !links @ [l] in 
+            lwt net_ref = Network.create ~rpc ~session_id:ses 
+                            ~name_label:(sprintf "mir%d" net_id)
+                            ~name_description:(sprintf "link between %s & %s" node_src node_dst)
+                            ~mTU:1500L ~other_config:[] ~tags:[] in
+            let _ = links := net_ref :: !links in 
             (* allocate vifs *)
-            let _ = vif_install ses dst_h net_ref in 
-            let _ = vif_install ses src_h net_ref in 
+            lwt _ = vif_install ses dst_h net_ref in 
+            lwt _ = vif_install ses src_h net_ref in 
              return ()
-          with Not_found -> return ()
+          with Not_found -> 
+            let _ = Printf.eprintf "ERROR:generate_links: cannot create link
+            between %s - %s\n%!" node_src node_dst in 
+            return ()
       ) link_list in 
   return ()
 
-let run_emulation ses duration = 
-  let _ = List.iter (
-    fun h -> Client.VM.start !rpc ses h.vm_ref false false 
-  ) !hosts in 
+let run_emulation session_id duration = 
+  lwt _ = Lwt_list.iter_p (
+    fun h -> VM.start ~rpc ~session_id ~vm:h.vm_uuid
+    ~start_paused:false ~force:false ) !hosts in 
     Lwt_unix.sleep (float_of_int duration)
 
-let clean_up_vm ses = 
-  let _ = List.iter (
-    fun h -> 
-      let _ = Client.VM.hard_shutdown !rpc ses h.vm_ref in 
-      let _ = Client.VM.destroy !rpc ses h.vm_ref in
-        ()
-  ) !hosts in 
-  let _ = List.iter (
-    fun l -> 
-      let _ = Client.Network.destroy !rpc ses l.net_ref in 
-        ()
-  ) !links in 
+let clean_up_vm session_id = 
+  lwt _ = Lwt_list.iter_p (
+      fun h ->
+        lwt _ = 
+          try_lwt 
+            VM.hard_shutdown ~rpc ~session_id ~vm:h.vm_uuid 
+            with _ -> return ()
+        in 
+        lwt _ = Lwt_unix.system  (sprintf "rm /boot/guest/%s.xen" h.name_label) in 
+        VM.destroy ~rpc ~session_id ~self:(h.vm_uuid)
+    ) !hosts in 
+  Lwt_list.iter_p (
+    fun self -> Network.destroy ~rpc ~session_id ~self) !links 
+
+let generate_scenario sc =
+  lwt ses = init_session () in
+  let module_name = get_scenario_name sc in 
+  let nodes = get_scenario_nodes sc in
+  let links = get_scenario_links sc in 
+  lwt _ = generate_vms ses module_name nodes in
+  lwt _ = generate_links ses links in
     return ()
-  
-let run_code module_name duration nodes links =
-  let ses = init_session "root" "c074e5d6" in
-    try 
-      let _ = printf "xapi: connected client.. \n" in
-      let uuid_tmpl = Client.VM.get_uuid !rpc ses
-                        (find_template ses vm_template) in
-      lwt _ = generate_vms ses uuid_tmpl module_name nodes in
-      let _ = generate_links ses links in
-      lwt _ = run_emulation ses duration in 
-      lwt _ = clean_up_vm ses in 
-        return ()
-    with _ -> 
-      lwt _ = clean_up_vm ses in 
-        return ()
+
+let clean_scenario sc = 
+  lwt session_id = init_session () in
+  let module_name = get_scenario_name sc in 
+  lwt _ = clean_up_vm session_id in 
+  lwt _ = Lwt_unix.system 
+      (sprintf "rm _build/topo_%s.ml"
+         module_name) in 
+    return ()
+
+let run_scenario sc =
+  lwt ses = init_session () in
+  let duration = get_scenario_duration sc in 
+  lwt _ = run_emulation ses duration in
+    return ()
 
 #else
 

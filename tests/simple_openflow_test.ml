@@ -33,10 +33,10 @@ let pp = Printf.printf
  *********************************************************)
 let ip node_id = 
   Nettypes.(
-    (ipv4_addr_of_tuple (10l,0l,1l,(Int32.of_int node_id)),
-    ipv4_addr_of_tuple (255l,255l,255l,0l),
-    [ ipv4_addr_of_tuple (10l,0l,1l,1l) ]
-    )) 
+     (Ipaddr.V4.make 10l 0l 1l (Int32.of_int node_id)),
+     (Ipaddr.V4.make 255l 255l 255l 0l),
+    [(Ipaddr.V4.make 10l 0l 1l 1l) ]
+    ) 
       
 (* Code to run on the end node *)
 let host_inner host_id () =
@@ -53,7 +53,7 @@ let host_inner host_id () =
 (*          Net.Channel.listen mgr (`TCPv4 ((None, port), Client.echo )) *)
           Client.pttcp_udp_server mgr port 1
         | 2 -> 
-          let dst_ip = Nettypes.ipv4_addr_of_tuple (10l,0l,1l,1l) in  
+          let dst_ip = Ipaddr.V4.make 10l 0l 1l 1l in  
           let _ = printf "[host%d] client setting up ip 10.0.1.%d\n%!" 
                     host_id host_id  in  
           lwt _ = Manager.configure interface (`IPv4 (ip host_id)) in
@@ -76,10 +76,10 @@ let controller_inner () =
     Manager.create (fun mgr interface id ->
       let ip = 
         Nettypes.(
-          (ipv4_addr_of_tuple (10l,0l,0l,2l),
-          ipv4_addr_of_tuple (255l,255l,255l,0l), [])) in  
+          (Ipaddr.V4.make  10l 0l 0l 2l,
+           Ipaddr.V4.make  255l 255l 255l 0l, [])) in  
      lwt _ = Manager.configure interface (`IPv4 ip) in
-      let dst = ((Nettypes.ipv4_addr_of_tuple (10l,0l,0l,1l)), 6633) in 
+      let dst = ((Ipaddr.V4.make 10l 0l 0l 1l), 6633) in 
         OC.connect mgr dst (Controller.init ~handle_arp:true "ctrl"
         (Controller.sw_data ()))
       )
@@ -102,13 +102,13 @@ let switch_inner () =
   try_lwt 
     Manager.create 
     (fun mgr interface id ->
-      let _ = pp "[xwitch] adding intf %s\n%!" id in 
-       match (id) with 
+      let _ = pp "[switch] adding intf %s\n%!" (OS.Netif.string_of_id id) in 
+       match (OS.Netif.string_of_id id) with 
          | "0" ->
              let ip = 
                Nettypes.(
-                 (ipv4_addr_of_tuple (10l,0l,0l,1l),
-                  ipv4_addr_of_tuple (255l,255l,255l,0l), [])) in  
+                 (Ipaddr.V4.make 10l 0l 0l 1l,
+                  Ipaddr.V4.make 255l 255l 255l 0l, [])) in  
                lwt _ = Manager.configure interface (`IPv4 ip) in
                lwt _ = Openflow.Ofswitch.listen sw mgr (None, 6633) in 
                 return ()

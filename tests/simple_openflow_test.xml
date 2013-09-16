@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
-<topology module="Simple_openflow_test" backend="ns3-direct" duration="30" logger="127.0.0.1">
+<topology module="Simple_openflow_test" backend="xen-direct" duration="30" logger="127.0.0.1">
   <modules>
     <library>uri</library>
     <library>lwt</library>
     <library>lwt.syntax</library>
     <library>cstruct</library>
+    <library>ipaddr</library>
     <library>cstruct.syntax</library>
     <library>mirage</library>
     <library>mirage-net</library>

@@ -49,7 +49,7 @@ let rec echo_udp dst buf =
   
 let rec echo_client_udp mgr dst =
   try_lwt
-    let data = Cstruct.sub (Io_page.to_cstruct (Io_page.get ())) 0 1460 in
+    let data = Cstruct.sub (Io_page.to_cstruct (Io_page.get 1)) 0 1460 in
     let rec send_data () = 
         lwt _ = Datagram.UDPv4.send mgr dst data in
         lwt () = Time.sleep 1.0 in

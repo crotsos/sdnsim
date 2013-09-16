@@ -39,6 +39,9 @@ val iter_scenario_links : scenario ->
   (string -> string -> int -> int -> bool -> unit) -> 
     unit
 
+val get_scenario_nodes : scenario -> (string, string * params) Hashtbl.t
+val get_scenario_links : scenario -> (string * string * int * int * bool) list
+
 val add_scenario_module : scenario -> string -> unit
 val iter_scenario_module : scenario -> (string -> unit) -> unit
 
