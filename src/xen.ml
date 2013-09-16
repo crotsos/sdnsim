@@ -35,7 +35,7 @@ let init_session () =
       
 let vm_install session_id name_label =
   try_lwt 
-    let memory = 32000000L in
+    let memory = 512000000L in
     let recommendations = "" (* "<restrictions><restriction
     field=\"memory-static-max\" max=\"137438953472\" /><restriction
     field=\"vcpus-max\" max=\"16\"/><restriction property=\"number-of-vbds\"
