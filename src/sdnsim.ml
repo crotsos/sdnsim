@@ -133,8 +133,6 @@ let build_ocamlbuild_files sc =
   let _ = build_tags_files sc in 
   ()
 
-
-
 lwt _ =
   try_lwt
     let sc = parse_xm_file Sys.argv.(1) in
@@ -142,8 +140,8 @@ lwt _ =
     let _ = build_ocamlbuild_files sc in 
     lwt _ = generate_scenario sc in
     lwt _ = run_scenario sc in
-    (* lwt _ = clean_scenario sc in *)
-      return ()
+    lwt _ = clean_scenario sc in 
+    return ()
   with ex ->
-      return (eprintf "error: %s\n%s\n%!" (Printexc.to_string ex)
-      (Printexc.get_backtrace ()))
+    return (eprintf "error: %s\n%s\n%!" (Printexc.to_string ex)
+              (Printexc.get_backtrace ()))

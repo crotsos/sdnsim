@@ -59,5 +59,6 @@ let iter_scenario_links sc fn =
       fn src dst delay rate pcap
   ) sc.links
 
+
 let get_scenario_nodes sc = sc.nodes
 let get_scenario_links sc = sc.links

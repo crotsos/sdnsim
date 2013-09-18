@@ -15,8 +15,9 @@ open Xen_api_lwt_unix
 type host_type = {
   name_label: string;
   vm_uuid: string;
-  mutable vif_uuid : string list;
+  mutable vif_uuid : (string * string * int * int) list;
   mutable vif_count: int;
+  mutable domid : int;
 }
 let hosts = ref []
 
@@ -35,7 +36,7 @@ let init_session () =
       
 let vm_install session_id name_label =
   try_lwt 
-    let memory = 512000000L in
+    let memory = 1024000000L in
     let recommendations = "" (* "<restrictions><restriction
     field=\"memory-static-max\" max=\"137438953472\" /><restriction
     field=\"vcpus-max\" max=\"16\"/><restriction property=\"number-of-vbds\"
@@ -60,7 +61,7 @@ let vm_install session_id name_label =
         ~protection_policy:"" ~is_snapshot_from_vmpp:false 
         ~appliance:"" ~start_delay:0L ~shutdown_delay:0L ~order:0L
         ~suspend_SR:"" ~version:(0L) in 
-    let h = {name_label; vm_uuid; vif_uuid=[]; vif_count=0;} in 
+let h = {name_label; vm_uuid; vif_uuid=[]; vif_count=0;domid=0;} in 
     let _ = hosts := !hosts @ [h] in
     return vm_uuid
   with exn -> 
@@ -115,23 +116,23 @@ let generate_vms ses module_name nodes =
      ) (Hashtbl.fold (fun h (m, p) r -> r @ [(h,m,p)] ) nodes []) in
   return ()
 
-let vif_install ses h net_ref = 
+let vif_install ses h dst_h net_ref rate = 
   let device = h.vif_count in 
   let _ = h.vif_count <- h.vif_count + 1 in
   lwt vif_uuid = VIF.create ~rpc ~session_id:ses 
       ~vM:h.vm_uuid ~network:net_ref ~mTU:1500L 
       ~mAC:"" ~device:(string_of_int device) 
       ~other_config:["promiscuous", "on"; "mtu", "1500"] 
-      ~qos_algorithm_type:"" ~qos_algorithm_params:[]
+      ~qos_algorithm_type:"ratelimit" ~qos_algorithm_params:[("kbps","1024")]
       ~locking_mode:(`network_default) ~ipv4_allowed:[]
         ~ipv6_allowed:[] in
-  let _ = h.vif_uuid <- vif_uuid :: h.vif_uuid in 
+  let _ = h.vif_uuid <- (vif_uuid, dst_h, device, rate) :: h.vif_uuid in 
     return ()
  
 
 let generate_links ses link_list = 
   lwt _ = 
-    Lwt_list.iter_p 
+    Lwt_list.iter_s 
       (
         fun (node_src, node_dst, delay, rate, _) ->
           try 
@@ -146,21 +147,15 @@ let generate_links ses link_list =
                             ~mTU:1500L ~other_config:[] ~tags:[] in
             let _ = links := net_ref :: !links in 
             (* allocate vifs *)
-            lwt _ = vif_install ses dst_h net_ref in 
-            lwt _ = vif_install ses src_h net_ref in 
+            lwt _ = vif_install ses dst_h node_src net_ref rate in 
+            lwt _ = vif_install ses src_h node_dst net_ref rate in 
              return ()
           with Not_found -> 
             let _ = Printf.eprintf "ERROR:generate_links: cannot create link
             between %s - %s\n%!" node_src node_dst in 
             return ()
-      ) link_list in 
+      )  link_list in 
   return ()
-
-let run_emulation session_id duration = 
-  lwt _ = Lwt_list.iter_p (
-    fun h -> VM.start ~rpc ~session_id ~vm:h.vm_uuid
-    ~start_paused:false ~force:false ) !hosts in 
-    Lwt_unix.sleep (float_of_int duration)
 
 let clean_up_vm session_id = 
   lwt _ = Lwt_list.iter_p (
@@ -194,11 +189,123 @@ let clean_scenario sc =
          module_name) in 
     return ()
 
+let get_topology sc =
+  let ix = ref 0L in 
+  let names = Hashtbl.create 64 in 
+  let nodes = ref [] in
+  let links = ref [] in  
+  let _ = Topo.iter_scenario_nodes  sc 
+    (fun name _ _ ->
+      Hashtbl.add names name !ix;
+      let _ = ix := Int64.add !ix 1L in 
+      nodes := !nodes @ [(Rpc.Dict [
+        ("name", (Rpc.String name));
+        ("flows", (Rpc.Enum []));
+        ("dev", (Rpc.Enum []));
+        ] )]
+    ) in
+
+  let _ = Topo.iter_scenario_links sc (
+    fun nodes_a nodes_b _ _ _ -> 
+      let ix_a = Hashtbl.find names nodes_a in 
+      let ix_b = Hashtbl.find names nodes_b in
+      links := !links @ [(Rpc.Dict 
+        [("source",(Rpc.Int ix_a));
+      ("target",(Rpc.Int ix_b));
+      ("ts", (Rpc.Float 0.0 ));
+      ("value",(Rpc.Int 1L))])] 
+      ) in 
+  (names, Rpc.Dict [("nodes",(Rpc.Enum !nodes));
+      ("links", (Rpc.Enum !links));])
+
+let send_msg fd time tpy msg = 
+  let msg = Jsonrpc.to_string (
+    Rpc.Dict [
+      ("ts", (Rpc.Float time));
+      ("type", (Rpc.String tpy));
+      ("data", (Rpc.String msg));]) in
+  let len = Cstruct.create 4 in 
+  let _ = Cstruct.BE.set_uint32 len 0 (Int32.of_int (String.length msg)) in 
+  lwt _ = Lwt_unix.write fd (Cstruct.to_string len) 0 4 in 
+  lwt _ = Lwt_unix.write fd msg 0 (String.length msg) in
+  return ()
+
+type link_utilisation = {
+  source : string;
+  target : string;
+  mutable byte_count : int64;
+  mutable rate: float;
+}
+
+let run_logger host port sc vifs =
+  let fd = socket Lwt_unix.PF_INET Lwt_unix.SOCK_STREAM  0 in
+  lwt _ = Lwt_unix.connect fd (Lwt_unix.ADDR_INET((Unix.inet_addr_of_string host), port)) in 
+  (* let ch = Lwt_io.of_fd mode:Lwt_io.output_channel fd in *)
+  let clock = ref 0.0 in 
+  let names, topo = get_topology sc in 
+  let msg =  Jsonrpc.to_string topo in 
+  lwt _ = send_msg fd !clock "topology" msg in
+  while_lwt true do
+    lwt _ = OS.Time.sleep 1.0 in
+    clock := !clock +. 1.0;
+    lwt links = 
+      Lwt_list.fold_right_s (
+        fun (vif, data) r -> 
+          (* (source, target, byte_count, rate) -> *)
+          (* sudo tc -s qdisc show dev vif220.0 | grep bytes  | cut -d \  -f 5 *)
+          lwt res = Lwt_process.pread ("/usr/bin/get_bytes",
+          [|"/usr/bin/get_bytes"; vif;|]) in
+          let res = String.sub res 0 ((String.length res)-1)  in 
+          let byte_count = Int64.of_string res in 
+          printf "device %s bytes %Ld\n%!" vif (Int64.sub byte_count data.byte_count); 
+          let load = Int64.sub byte_count data.byte_count in 
+          let utilization = (Int64.to_float (Int64.shift_right load 17)) in
+          Hashtbl.replace vifs vif 
+          ({source=data.source;target=data.target;byte_count;rate=data.rate;});
+              if (utilization >= 0.0) then
+                let s_ix = Hashtbl.find names data.source in 
+                let d_ix = Hashtbl.find names data.target in 
+                return (r @ [(Rpc.Dict [
+                     ("source", Rpc.String data.source);
+                     ("target", Rpc.String data.target);
+                     ("ts", (Rpc.Float !clock ));
+                     ("value", (Rpc.Float (utilization /. data.rate)))])])
+              else 
+                return (r)
+      ) (Hashtbl.fold (fun a b r-> (a,b)::r) vifs []) [] in  
+      printf "utilisation links %d\n%!" (List.length links);
+      let msg =  Jsonrpc.to_string (Rpc.Enum links) in 
+      lwt _ = send_msg fd !clock "link_utilization" msg in
+     return ()
+  done 
+
+let run_emulation session_id duration sc =
+  let vifs = Hashtbl.create 16 in 
+  lwt _ = Lwt_list.iter_s (
+    fun h -> 
+    lwt _ = VM.start ~rpc ~session_id ~vm:h.vm_uuid
+               ~start_paused:false ~force:false in
+    lwt domid = VM.get_domid ~rpc ~session_id ~self:h.vm_uuid in
+    let _ = h.domid <- Int64.to_int domid in
+    let _ = 
+      List.iter ( fun (uuid, dst, id, rate) ->
+        Hashtbl.add vifs (sprintf "vif%Ld.%d" domid id) 
+        ({source=h.name_label; target=dst; byte_count=0L; rate=(float_of_int rate);})
+      ) h.vif_uuid in 
+    return ()
+    ) !hosts in
+  lwt _ = 
+    match (get_scenario_log_server sc) with
+    | None ->  (Lwt_unix.sleep (float_of_int duration))
+    | Some (host, port) -> (run_logger host port sc vifs) <?> (Lwt_unix.sleep (float_of_int duration)) 
+  in
+    return ()
+
 let run_scenario sc =
   lwt ses = init_session () in
-  let duration = get_scenario_duration sc in 
-  lwt _ = run_emulation ses duration in
-    return ()
+  let duration = get_scenario_duration sc in
+  lwt _ = run_emulation ses duration sc in
+  return ()
 
 #else
 

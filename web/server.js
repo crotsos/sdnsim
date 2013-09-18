@@ -168,6 +168,7 @@ server.on("connection", function(c) {
            console.log("parsing links");
            for (a = 0; a < links.length; a++) {
              j = find_link(links[a], topology.links);
+             console.log("found link");
              if(j>=0) {
                if( (links[a].ts > topology.links[j].ts) || 
                    ((links[a].ts == topology.links[j].ts) &&

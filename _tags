@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 9258b82749aa99deb4110ae1452dea34)
+# DO NOT EDIT (digest: 1e6368c40482eba7b7af1c5e4d9ae835)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -14,6 +14,8 @@
 "_darcs": -traverse
 "_darcs": not_hygienic
 # Executable sdnsim
+"src/sdnsim.native": pkg_mirage
+"src/sdnsim.native": pkg_mirage-net
 "src/sdnsim.native": pkg_lwt
 "src/sdnsim.native": pkg_lwt.syntax
 "src/sdnsim.native": pkg_lwt.unix
@@ -25,6 +27,8 @@
 "src/sdnsim.native": pkg_stdext
 "src/sdnsim.native": pkg_http-svr
 "src/sdnsim.native": pkg_xen-api-client.lwt
+<src/*.ml{,i}>: pkg_mirage
+<src/*.ml{,i}>: pkg_mirage-net
 <src/*.ml{,i}>: pkg_lwt
 <src/*.ml{,i}>: pkg_lwt.syntax
 <src/*.ml{,i}>: pkg_lwt.unix
