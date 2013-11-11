@@ -1,3 +1,19 @@
+(*
+ * Copyright (c) 2012 Charalampos Rotsos <cr409@cl.cam.ac.uk>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *)
+
 open Printf
 open MyXML
 open Lwt
@@ -9,18 +25,15 @@ let get_logging_server_attrib el =
   try
     let log = get_attrib_fail el "logger" in
     match (Re_str.split (Re_str.regexp ":") log ) with 
-      | [server] -> 
-          let _ = printf "XXXXXXX returning server %s:%d\n%!" server 
-                  log_server_port in 
-          Some (server, log_server_port)
-      | server::port:: _  -> 
-          let _ = printf "XXXXXXX returning server %s:%s\n%!" server 
-                  port in 
-          Some (server, (int_of_string port))
+      | [server] -> Some (server, log_server_port)
+      | server::port:: _  -> Some (server, (int_of_string port))
       | _ -> None
-    with _ -> 
-      let _ = printf "XXXXXXX no logging service\n%!" in 
-      None
+    with _ -> None
+
+let get_slowdown_attrib el = 
+  try
+    float_of_string (get_attrib_fail el "slowdown")
+  with _ -> 1.0
 
 (* load the topology description file *)
 let parse_xm_file file =
@@ -34,6 +47,7 @@ let parse_xm_file file =
   let _ = set_scenario_name sc (get_attrib_fail xml "module") in  
   let _ = set_scenario_log_server sc 
           (get_logging_server_attrib xml) in  
+  let _ = set_scenario_slowdown sc (get_slowdown_attrib xml) in  
   let _ = set_scenario_backend sc 
             (get_attrib_default xml "backend" "ns3-direct") in 
   let _ = 
@@ -133,15 +147,18 @@ let build_ocamlbuild_files sc =
   let _ = build_tags_files sc in 
   ()
 
-lwt _ =
+let _ =
+  Lwt_main.run (
   try_lwt
+    let evtchn_h = Eventchn.init () in
     let sc = parse_xm_file Sys.argv.(1) in
     let _ = build_tags_files sc in 
     let _ = build_ocamlbuild_files sc in 
     lwt _ = generate_scenario sc in
-    lwt _ = run_scenario sc in
+    lwt _ = run_scenario sc evtchn_h in
     lwt _ = clean_scenario sc in 
     return ()
   with ex ->
     return (eprintf "error: %s\n%s\n%!" (Printexc.to_string ex)
               (Printexc.get_backtrace ()))
+  )

@@ -1,3 +1,19 @@
+(*
+ * Copyright (c) 2012 Charalampos Rotsos <cr409@cl.cam.ac.uk>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *)
+
 open Printf
 
 type backend = 
@@ -14,6 +30,7 @@ type params = (string option * string) list
 type scenario = {
   mutable name : string;
   mutable duration : int;
+  mutable slowdown : float;
   mutable backend :backend;
   mutable log_server : (string * int) option;
   mutable nodes : (string, string * params) Hashtbl.t;
@@ -23,13 +40,15 @@ type scenario = {
 
 let init_scenario () = 
   {duration=60; backend=NS3; nodes=(Hashtbl.create 64); links=[];
-    name="";modules=[]; log_server=None; }
+    name="";modules=[]; log_server=None; slowdown=1.0;}
 
 let set_scenario_log_server sc value =  sc.log_server <- value
 let get_scenario_log_server sc = sc.log_server
 
 let set_scenario_duration sc d = sc.duration <- d
 let get_scenario_duration sc = sc.duration
+let set_scenario_slowdown sc d = sc.slowdown <- d
+let get_scenario_slowdown sc = sc.slowdown
 let set_scenario_backend sc b = sc.backend <- (string_to_backend b)
 let get_scenario_backend sc = sc.backend
 let set_scenario_name sc n = sc.name <- n

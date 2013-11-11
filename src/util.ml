@@ -1,4 +1,3 @@
-
 (*
  * Copyright (c) 2013 Thomas Gazagnaire <thomas@gazagnaire.org>
  * Copyright (c) 2013 Anil Madhavapeddy <anil@recoil.org>
@@ -68,5 +67,3 @@ let read_command fmt =
       | WSTOPPED n  -> error "process stopped by signal %d" n
       | WEXITED r   -> error "command terminated with exit code %d\nstderr: %s" r (Buffer.contents buf2)
     ) fmt
-
-

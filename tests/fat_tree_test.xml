@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!-- <topology module="Rdsf_test" logger="23.20.194.252" backend="ns3-direct"> -->
-<topology module="Fat_tree_test" duration="60" backend="ns3-direct" logger="127.0.0.1">
+<topology module="Fat_tree_test" duration="30" backend="xen-direct" logger="127.0.0.1">
   <modules>
    <library>lwt</library>
     <library>lwt.syntax</library>
@@ -9,6 +9,7 @@
     <library>mirage</library>
     <library>mirage-net</library>
     <library>openflow</library>
+    <library>openflow.flv</library>
     <library>pttcp</library>
     <library>uri</library>
   </modules>

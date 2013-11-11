@@ -1,3 +1,19 @@
+(*
+ * Copyright (c) 2012 Charalampos Rotsos <cr409@cl.cam.ac.uk>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *)
+
 type backend = 
   | NS3
   | XEN
@@ -7,6 +23,7 @@ type params = (string option * string) list
 type scenario = {
   mutable name : string; 
   mutable duration : int;
+  mutable slowdown : float;
   mutable backend :backend;
   mutable log_server : (string * int) option;
   mutable nodes : (string, string * params) Hashtbl.t;
@@ -21,6 +38,9 @@ val get_scenario_duration : scenario -> int
 
 val set_scenario_backend : scenario -> string -> unit
 val get_scenario_backend : scenario -> backend
+
+val get_scenario_slowdown : scenario -> float
+val set_scenario_slowdown : scenario -> float -> unit
 
 val set_scenario_name : scenario -> string -> unit 
 val get_scenario_name : scenario -> string

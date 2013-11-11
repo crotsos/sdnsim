@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
-<topology module="Simple_tcp_test" backend="xen-direct" duration="90" slowdown="10.0">
+<topology module="Simple_vchan_test" backend="xen-direct" duration="30" logger="" > <!-- 127.0.0.1:8124"> -->
   <modules>
     <library>lwt</library>
     <library>lwt.syntax</library>
     <library>cstruct</library>
+    <library>ipaddr</library>
     <library>cstruct.syntax</library>
     <library>mirage</library>
     <library>mirage-net</library>
-    <library>pttcp</library>
     <library>vchan</library>
     <library>xenctrl</library>
     <library>xenstore.client</library>
@@ -16,8 +16,4 @@
   <node name="node1" main="host_inner"> 
     <param>1</param>
   </node>
-  <node name="node2" main="host_inner"> 
-    <param>2</param>
-  </node>
-  <link src="node1" dst="node2" delay="10" rate="1000000" queue_size="100" pcap="false"/>
 </topology>

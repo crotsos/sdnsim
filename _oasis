@@ -14,4 +14,4 @@ Executable sdnsim
   Custom:         true
   CompiledObject: native
   Install:        true
-  BuildDepends:   mirage, mirage-net, lwt, lwt.syntax, lwt.unix, xml-light2, threads, optcomp, re.str, xen-api-client, stdext, http-svr,xen-api-client.lwt
+  BuildDepends:   xenctrl.lwt, mirage, xenstore.client, xenstore_transport.lwt, xenctrl, lwt, lwt.syntax, xml-light2, threads, optcomp, xen-api-client, xen-api-client.lwt, vchan 
