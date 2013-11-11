@@ -61,14 +61,13 @@ let generate_scenario sc =
 
      let build_simulation module_name = *)
   let _ = Unix.system (sprintf "rm %s.native" module_name) in 
-  let _ = Unix.system "ocamlbuild -clean" in 
-  let path = "/home/cr409/.opam/4.00.1+mirage-ns3-direct/" in 
+  let _ = Unix.system "opam config --switch 4.00.1+mirage-ns3-direct exec \"ocamlbuild -clean\"" in 
    (* TODO make he bin patgh dynamic *)
-  let _ = Util.command "PATH=%s/bin/:$PATH %s/bin/ocamlbuild topo_%s.nobj.o"
-      path path module_name in
+  let _ = Util.command "opam config --switch 4.00.1+mirage-ns3-direct exec \"ocamlbuild topo_%s.nobj.o\""
+            module_name in
   let obj = sprintf "_build/topo_%s.nobj.o" module_name in 
   if Sys.file_exists obj then begin
-    let path = Util.read_command "%s/bin/ocamlfind printconf path" path in
+    let path = Util.read_command "opam config --switch 4.00.1+mirage-ns3-direct exec \"ocamlfind printconf path\"" in
     let lib = Util.strip path ^ "/mirage" in
 
     Util.command "g++ _build/topo_%s.nobj.o %s/libns3run.a %s/../ocaml/libunix.a  %s/../ocaml/libasmrun.a %s/../cstruct/libcstruct_stubs.a %s/../ocaml/libbigarray.a  -ldl -lns3.15-core -lns3.15-network -lns3.15-point-to-point -lns3.15-mpi -o %s.native" module_name lib lib lib lib lib module_name;
@@ -82,7 +81,7 @@ let generate_scenario sc =
   let _ = Unix.system (sprintf "rm topo_%s.ml" module_name) in 
   return () *)
 
-let run_scenario sc _ = 
+let run_scenario sc = 
   let _ = Unix.system (sprintf "mpirun -n %d ./%s.native" 
                          (get_scenario_node_count sc) (get_scenario_name sc)) in 
   return ()

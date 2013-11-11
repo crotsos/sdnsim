@@ -4,7 +4,6 @@
 open Lwt
 open Lwt_unix
 open Printf
-open Stringext
 open Topo
 
 
@@ -246,7 +245,7 @@ let run_logger host port sc vifs =
   let msg =  Jsonrpc.to_string topo in 
   lwt _ = send_msg fd !clock "topology" msg in
   while_lwt true do
-    lwt _ = OS.Time.sleep 1.0 in
+    lwt _ = Lwt_unix.sleep 1.0 in
     clock := !clock +. 1.0;
     lwt links = 
       Lwt_list.fold_right_s (

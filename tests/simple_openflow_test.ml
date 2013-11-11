@@ -103,7 +103,7 @@ let print_time () =
   done
 
 let switch_inner () = 
-  let sw = Openflow.Ofswitch.create_switch 0x1L in
+  let sw = Switch.Ofswitch.create_switch 0x1L in
   try_lwt
     Manager.create 
       (fun mgr interface id ->
@@ -115,9 +115,9 @@ let switch_inner () =
                (Ipaddr.V4.make 192l 168l 0l 1l,
                 Ipaddr.V4.make 255l 255l 255l 0l, [])) in  
            lwt _ = Manager.configure interface (`IPv4 ip) in
-           lwt _ = Openflow.Ofswitch.listen sw mgr (None, 6633) in 
+           lwt _ = Switch.Ofswitch.listen sw mgr (None, 6633) in 
            return ()
-         | _ ->  Openflow.Ofswitch.add_port mgr sw id
+         | _ ->  Switch.Ofswitch.add_port mgr sw id
       )
   with e ->
     Printf.eprintf "Error: %s" (Printexc.to_string e); 
